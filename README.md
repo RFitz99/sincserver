@@ -1,6 +1,7 @@
 # sincserver
 
 ![Build status](https://travis-ci.org/sdob/sincserver.svg)
+[![Coverage Status](https://coveralls.io/repos/github/sdob/sincserver/badge.svg?branch=master)](https://coveralls.io/github/sdob/sincserver?branch=master)
 
 SINC backend.
 
