@@ -28,7 +28,9 @@ load_dotenv(find_dotenv())
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = (os.environ['DEBUG'] == 'True')
+# If DEBUG is set to True in .env, then set it to True here, otherwise
+# False
+DEBUG = (os.environ.get('DEBUG', 'False') == 'True')
 
 ALLOWED_HOSTS = []
 
