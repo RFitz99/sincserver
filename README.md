@@ -1,6 +1,9 @@
 # sincserver
 
+![Build status](https://travis-ci.org/sdob/sincserver.svg)
+
 SINC backend.
+
 
 ## Requirements
 
