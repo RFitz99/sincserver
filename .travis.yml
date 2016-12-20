@@ -7,7 +7,10 @@ services:
 # Install dependencies
 install:
   - pip install -r requirements.txt
+  - pip install coveralls
 before_script:
   - psql -c 'create database sincserver;' -U postgres
 script:
-  - python manage.py test
+  - coverage run --source="." manage.py test
+after_success:
+  - coveralls
