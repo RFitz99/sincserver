@@ -59,7 +59,7 @@ class User(AbstractUser):
     # create_user method
     objects = UserManager()
 
-    USERNAME_FIELD = 'id'
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
 
     # Title by which the user is to be addressed ('Dr', 'Ms', etc.)
     title = models.IntegerField(choices=choices.TITLE_CHOICES, blank=True, null=True)
