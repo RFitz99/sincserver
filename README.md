@@ -8,7 +8,7 @@ SINC backend.
 ## Requirements
 
 1. Python 3.4 or above.
-1. PostgreSQL 9.5.4 or above. (SINC will Postgres in production and has
+1. PostgreSQL 9.5.4 or above. (SINC will use Postgres in production and has
 `psycopg2` in its dependencies, although you're free to use SQLite in development.)
 
 ## Getting started
@@ -25,4 +25,4 @@ SINC backend.
 1. (Optional) Run the tests: `python manage.py test`
 1. Run the development server: `python manage.py runserver`
 
-This will start the dev server running on http://localhost:8000/.
+This will start the dev server running on [http://localhost:8000/](http://localhost:8000/).
