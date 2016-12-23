@@ -10,6 +10,10 @@ class Certificate(models.Model):
     # The name of this certificate
     name = models.CharField(max_length=200)
 
+    # Is this a certificate that entitles the user to instruct other
+    # members?
+    is_instructor_certificate = models.BooleanField(default=False)
+
     def __str__(self):
         return self.name
 
