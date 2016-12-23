@@ -27,7 +27,7 @@ class Qualification(models.Model):
     certificate = models.ForeignKey('Certificate', on_delete=models.CASCADE)
 
     # Granted to whom?
-    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    user = models.ForeignKey('users.User', related_name='qualifications', on_delete=models.CASCADE)
 
     # When was it granted? By default, when the model is created
     date_granted = models.DateTimeField(blank=True, default=timezone.now)
