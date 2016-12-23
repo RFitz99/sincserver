@@ -68,6 +68,12 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
 
+    @list_route(methods=['get'], url_path='active-instructors')
+    def active_instructors(self, request):
+        queryset = User.objects.filter(qualifications__certificate__is_instructor_certificate=True)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
     @list_route(methods=['get'])
     def me(self, request):
         fields = fieldsets.OWN_PROFILE
