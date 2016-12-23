@@ -39,3 +39,9 @@ class IsCommitteeMember(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return request.user.has_any_role()
+
+
+class IsAdminOrDiveOfficer(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return request.user.is_superuser or request.user.is_staff or request.user.is_dive_officer()
