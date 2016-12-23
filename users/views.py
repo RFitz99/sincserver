@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from clubs.models import Club, CommitteePosition
+from clubs.roles import DIVE_OFFICER
 from clubs.serializers import CommitteePositionSerializer
 from courses.models import Course
 from courses.serializers import CourseSerializer
@@ -65,6 +66,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.filter(club=user.club)
         return User.objects.filter(id=user.id)
 
+
     def list(self, request):
         queryset = User.objects.none()
         if self.request.user.is_superuser:
@@ -75,6 +77,12 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = User.objects.filter(user=self.request.user)
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
+
+
+    ###########################################################################
+    # Extra routes
+    ###########################################################################
+
 
     @list_route(methods=['get'], url_path='active-instructors')
     def active_instructors(self, request):
@@ -100,6 +108,73 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+    @detail_route(methods=['get'], url_path='courses-organized')
+    def courses_organized(self, request, pk=None):
+        """
+        Return the list of courses that this user has organized.
+        """
+        user = self.get_object()
+        courses = Course.objects.filter(organizer=user)
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
+
+    @detail_route(methods=['get'], url_path='courses-taught')
+    def courses_taught(self, request, pk=None):
+        """
+        Return the list of courses on which this user is teaching
+        or has taught
+        """
+        user = self.get_object()
+        courses = Course.objects.filter(instructors=user)
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
+
+    @detail_route(methods=['get'])
+    def current_membership_status(self, request, pk=None):
+        """
+        Return this user's current membership status
+        """
+        # TODO: 
+        user = self.get_object()
+        fields = fieldsets.MEMBERSHIP_STATUS
+        serializer = UserSerializer(user, fields=fields)
+        return Response(serializer.data)
+
+
+    @list_route(methods=['get'])
+    def dive_officers(self, request):
+        """
+        Return a list of club dive officers with their contact details.
+        This is only available to system administrators (who can see
+        all of the DOs or filter by region) and club Dive Officers
+        (who can see DOs in their region).
+        """
+        # TODO: allow RDOs to see DOs in their region
+        user = request.user
+        if not (user.is_admin() or user.is_dive_officer()):
+            raise PermissionDenied
+
+        # We only want Dive Officers
+        queryset = User.objects.filter(committee_positions__role=DIVE_OFFICER)
+
+        # If the user is an admin, they can opt to filter by region or
+        # just see all Dive Officers
+        if user.is_admin():
+            if 'region' in request.data:
+                queryset = queryset.filter(club__region=request.data['region'])
+        else:
+            queryset = queryset.filter(club__region=user.club.region)
+
+        # We only want the contact details of these Dive Officers
+        fields = fieldsets.CONTACT_DETAILS
+
+        # Serialize and return the data
+        serializer = UserSerializer(dive_officers, fields=fields, many=True)
+        return Response(serializer.data)
+
+
     @list_route(methods=['get'])
     def me(self, request):
         """
@@ -108,45 +183,3 @@ class UserViewSet(viewsets.ModelViewSet):
         fields = fieldsets.OWN_PROFILE
         serializer = UserSerializer(request.user, fields=fields)
         return Response(serializer.data)
-
-
-    @detail_route(methods=['get'], url_path='courses-organized')
-    def courses_organized(self, request, pk=None):
-        user = self.get_object()
-        courses = Course.objects.filter(organizer=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
-
-    @detail_route(methods=['get'], url_path='courses-taught')
-    def courses_taught(self, request, pk=None):
-        user = self.get_object()
-        courses = Course.objects.filter(instructors=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
-
-    @detail_route(methods=['get'])
-    def current_membership_status(self, request, pk=None):
-        user = self.get_object()
-        fields = fieldsets.MEMBERSHIP_STATUS
-        serializer = UserSerializer(user, fields=fields)
-        return Response(serializer.data)
-
-    # TODO: restrict this information to committee members
-    @list_route(methods=['get'])
-    def dive_officers(self, request):
-        """
-        Return a list of club dive officers with their contact details.
-        """
-        user = request.user
-        if not (user.is_admin() or user.is_dive_officer()):
-            raise PermissionDenied
-        fields = fieldsets.CONTACT_DETAILS
-        # TODO: can we pass a lambda to filter()?
-        dive_officers = User.objects.none()
-        serializer = UserSerializer(dive_officers, fields=fields, many=True)
-        return Response(serializer.data)
-
-    # TODO: restrict this information to committee members
-    @list_route(methods=['get'])
-    def current_instructors(self, request):
-        pass
