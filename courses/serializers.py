@@ -21,5 +21,5 @@ class CourseSerializer(ModelSerializer):
                 )
     certificate = CertificateSerializer()
     creator = UserSerializer(fields=('id', 'first_name', 'last_name',))
-    organizer = UserSerializer(fields=('id', 'first_name', 'last_name',))
+    organizer = UserSerializer(fields=('id', 'first_name', 'last_name', 'email',))
     region = RegionSerializer()
