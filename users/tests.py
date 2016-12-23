@@ -59,8 +59,8 @@ class CheckInstructorStatusTestCase(APITestCase):
         # Create a non-instructor DO
         self.do = User.objects.create_user(first_name='Dave', last_name='Officer')
         self.do.club = self.club
-        self.do.save()
         self.do.become_dive_officer()
+        self.do.save()
 
     def test_is_instructor_returns_true_when_it_should(self):
         self.assertTrue(self.u.is_instructor())
@@ -118,7 +118,7 @@ class DiveOfficerPrivilegesTestCase(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertEqual(len(result.data), 1)
         #print(reverse('club-qualifications', args=[self.do.club.id]))
-    
+
 
 class UserCreationTestCase(APITestCase):
 
@@ -137,6 +137,16 @@ class UserCreationTestCase(APITestCase):
         u = User.objects.get(first_name='Joe', last_name='Bloggs')
         self.assertEqual(u.club, self.club)
 
+    def test_creating_a_user_allows_explicit_club_field(self):
+        su = User.objects.create_superuser(first_name='Super', last_name='User', password='password')
+        dauntsac = Club.objects.create(name='Daunt SAC')
+        self.client.force_authenticate(su)
+        data = MOCK_USER_DATA.copy()
+        data['club'] = dauntsac.id
+        result = self.client.post(reverse('user-list'), data)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        u = User.objects.get(first_name='Joe')
+        self.assertEqual(u.club, dauntsac)
 
 class QualificationTestCase(APITestCase):
 
