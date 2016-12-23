@@ -20,11 +20,12 @@ from rest_framework_nested import routers as nested_routers
 
 from qualifications.views import QualificationViewSet
 from clubs.views import ClubViewSet, RegionViewSet
-from courses.views import CourseViewSet
+from courses.views import CertificateViewSet, CourseViewSet
 from users.views import UserViewSet
 
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet, base_name='user')
+router.register(r'certificates', CertificateViewSet, base_name='certificate')
 router.register(r'clubs', ClubViewSet, base_name='club')
 router.register(r'courses', CourseViewSet, base_name='course')
 router.register(r'regions', RegionViewSet, base_name='region')
