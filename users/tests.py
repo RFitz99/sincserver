@@ -42,6 +42,23 @@ class SimpleUserTestCase(APITestCase):
         self.assertEquals('Joe Bloggs', self.u.get_full_name())
 
 
+class CheckInstructorStatusTestCase(APITestCase):
+
+    def setUp(self):
+        # Create an instructor
+        self.u = User.objects.create_user(first_name='Joe', last_name='Bloggs')
+        self.mon1 = Certificate.objects.create(name='Mon 1', is_instructor_certificate=True)
+        self.u.receive_certificate(self.mon1)
+        # Create a non-instructor
+        self.u2 = User.objects.create_user(first_name='Bob', last_name='Pleb')
+
+    def test_is_instructor_returns_true_when_it_should(self):
+        self.assertTrue(self.u.is_instructor())
+
+    def test_is_instructor_returns_false_when_it_should(self):
+        self.assertFalse(self.u2.is_instructor())
+
+
 class DiveOfficerPrivilegesTestCase(APITestCase):
 
     def setUp(self):
