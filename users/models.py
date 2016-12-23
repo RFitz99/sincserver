@@ -187,6 +187,7 @@ class User(AbstractUser):
     ############################################################################
     # Committee role setters ('become_$ROLE') and getters ('is_$ROLE')
     ############################################################################
+
     def __adopt_role(self, role):
         CommitteePosition.objects.get_or_create(user=self, club=self.club, role=role)
 
@@ -232,6 +233,13 @@ class User(AbstractUser):
     def readable_membership_type(self):
         return self.get_membership_type_display()
 
+
+    ############################################################################
+    # Instructional certification checking
+    ############################################################################
+
+    def is_instructor(self):
+        return self.qualifications.filter(certificate__is_instructor_certificate=True).exists()
 
     ############################################################################
     # Certificate handling
