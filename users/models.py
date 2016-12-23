@@ -110,6 +110,13 @@ class User(AbstractUser):
     membership_type = models.IntegerField(choices=choices.MEMBERSHIP_CHOICES, default=choices.MEMBERSHIP_FULL)
 
     ############################################################################
+    # Convenience methods for permisson handling
+    ############################################################################
+
+    def is_admin(self):
+        return self.is_staff or self.is_superuser
+
+    ############################################################################
     # Membership status
     ############################################################################
 
