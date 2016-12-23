@@ -85,7 +85,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
         # Lists of active instructors are available to staff,
         # club DOs, and noone else
-        if not (user.is_staff or user.is_dive_officer()):
+        if not (user.is_admin() or user.is_dive_officer()):
             raise PermissionDenied
 
         # Queryset is initially all instructors
@@ -137,6 +137,9 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         Return a list of club dive officers with their contact details.
         """
+        user = request.user
+        if not (user.is_admin() or user.is_dive_officer()):
+            raise PermissionDenied
         fields = fieldsets.CONTACT_DETAILS
         # TODO: can we pass a lambda to filter()?
         dive_officers = User.objects.none()
