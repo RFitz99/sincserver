@@ -32,9 +32,6 @@ class UserViewSet(viewsets.ModelViewSet):
         'delete': [IsAdminUser],
     }
 
-    def create(self, request):
-        return super(UserViewSet, self).create(request)
-
     def get_permissions(self):
         # TODO: Rather than enumerate these explicitly here, we should
         # do something more elegant. (I just need to work out what that is.)
