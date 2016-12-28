@@ -97,8 +97,8 @@ class User(AbstractUser):
     # Club membership
     ############################################################################
 
-    # Each user belongs to a club (including the default National club)
-    club = models.ForeignKey(Club, blank=True, null=True)
+    # Each user belongs to exactly one club (including the default National club)
+    club = models.ForeignKey(Club, blank=True, null=True, related_name='users')
 
     member_since = models.DateTimeField(default=timezone.now)
 
