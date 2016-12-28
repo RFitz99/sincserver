@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from clubs.serializers import ClubSerializer
 from users.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -22,6 +23,8 @@ class UserSerializer(serializers.ModelSerializer):
             'next_renewal_due_date',
             'next_year_membership_status',
         )
+
+    club = ClubSerializer()
 
     # Our constructor takes an optional 'fields' argument that allows us
     # to specify the fields that should be serialized. If a set of fields
