@@ -1,6 +1,11 @@
 from rest_framework.serializers import ModelSerializer
 
-from clubs.models import CommitteePosition, Region
+from clubs.models import Club, CommitteePosition, Region
+
+class ClubSerializer(ModelSerializer):
+    class Meta:
+        model = Club
+        fields = ('name', 'id',)
 
 class CommitteePositionSerializer(ModelSerializer):
     class Meta:
