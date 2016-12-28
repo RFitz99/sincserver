@@ -24,8 +24,6 @@ class UserSerializer(serializers.ModelSerializer):
             'next_year_membership_status',
         )
 
-    club = ClubSerializer()
-
     # Our constructor takes an optional 'fields' argument that allows us
     # to specify the fields that should be serialized. If a set of fields
     # is explicitly specified, then exclude unspecified fields; otherwise
