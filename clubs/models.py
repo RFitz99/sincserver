@@ -71,3 +71,6 @@ class Region(models.Model):
 
     dive_officer = models.ForeignKey('users.User', blank=True, null=True)
     name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
