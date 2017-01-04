@@ -65,13 +65,28 @@ class RegionViewSet(viewsets.ModelViewSet):
     def active_instructors(self, request, pk=None):
         """
         Return a list of the active instructors in the region.
+        Admins can see this list, as can committee members of clubs in the region
+        and the region's Dive Officer. Everyone else is forbidden.
         """
-        # Check user's permission to view
+        # Get the region
+        region = self.get_object()
+        # Get the requesting user
         user = self.request.user
-        if not (user.is_admin() or user.has_any_role()):
+
+        # If the user is an admin, then they're fine
+        if user.is_admin():
+            pass
+        # Otherwise, if the user is a committee member and the region
+        # matches, then they're fine
+        elif user.has_any_role() and user.club.region == region:
+            pass
+        # Or (least likely) the user is the regional dive officer
+        elif region.dive_officer == user:
+            pass
+        # Otherwise, they're forbidden
+        else:
             raise PermissionDenied
 
-        region = self.get_object()
         # Get all instructors from this region
         queryset = User.objects.filter(
             club__region=region,

@@ -45,7 +45,7 @@ class ActiveInstructorsTestCase(APITestCase):
         result = self.client.get(reverse('region-active-instructors', args=[self.south.id]))
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_dive_officer_can_view(self):
+    def test_dive_officer_can_view_own_region(self):
         expected_result_length = User.objects.filter(
             club__region=self.south,
             qualifications__certificate__is_instructor_certificate=True
@@ -55,6 +55,11 @@ class ActiveInstructorsTestCase(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         data = result.data
         self.assertEqual(len(data), expected_result_length)
+
+    def test_dive_officer_cannot_view_other_region(self):
+        self.client.force_authenticate(self.do)
+        result = self.client.get(reverse('region-active-instructors', args=[self.north.id]))
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_training_officer_can_view(self):
         expected_result_length = User.objects.filter(
@@ -74,6 +79,20 @@ class ActiveInstructorsTestCase(APITestCase):
         ).count()
         su = User.objects.create_superuser(first_name='Super', last_name='User', password='password')
         self.client.force_authenticate(su)
+        result = self.client.get(reverse('region-active-instructors', args=[self.south.id]))
+        self.assertEqual(result.status_code, status.HTTP_200_OK)
+        data = result.data
+        self.assertEqual(len(data), expected_result_length)
+
+    def test_rdo_can_view(self):
+        expected_result_length = User.objects.filter(
+            club__region=self.south,
+            qualifications__certificate__is_instructor_certificate=True
+        ).count()
+        rdo = User.objects.create_user(first_name='Regional', last_name='Dive-Officer')
+        self.south.dive_officer = rdo
+        self.south.save()
+        self.client.force_authenticate(rdo)
         result = self.client.get(reverse('region-active-instructors', args=[self.south.id]))
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         data = result.data
