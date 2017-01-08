@@ -143,6 +143,16 @@ class UserCreationTestCase(APITestCase):
         result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
         self.assertEqual(result.status_code, status.HTTP_201_CREATED)
 
+    def test_unauthenticated_users_cannot_create_users(self):
+        result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
+        self.assertEqual(result.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_regular_users_cannot_create_users(self):
+        u = User.objects.create_user(first_name='Normal', last_name='User', club=self.club)
+        self.client.force_authenticate(u)
+        result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
+        self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_creating_a_user_adds_that_user_to_a_club(self):
         self.client.force_authenticate(self.do)
         result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
