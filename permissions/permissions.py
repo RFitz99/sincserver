@@ -4,6 +4,9 @@ from clubs.models import CommitteePosition
 from clubs.roles import DIVE_OFFICER
 from users.models import User
 
+def is_admin(user):
+    return user.is_staff or user.is_superuser
+
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
@@ -53,4 +56,8 @@ class IsCommitteeMember(permissions.BasePermission):
 class IsAdminOrDiveOfficer(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        return request.user and (request.user.is_admin() or request.user.is_dive_officer())
+        if not request.user:
+            return None
+        if request.user.is_anonymous:
+            return False
+        return (is_admin(request.user) or request.user.is_dive_officer())
