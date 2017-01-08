@@ -14,7 +14,6 @@ MOCK_USER_DATA = {
         'email': 'joe_bloggs@example.com'
         }
 
-# Create your tests here.
 class SimpleUserTestCase(APITestCase):
 
     def setUp(self):
