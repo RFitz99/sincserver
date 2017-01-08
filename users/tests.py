@@ -180,6 +180,12 @@ class UserCreationTestCase(APITestCase):
         u = User.objects.get(first_name='Joe')
         self.assertEqual(u.club, self.do.club)
 
+    def test_users_will_have_their_id_as_their_username(self):
+        self.client.force_authenticate(self.do)
+        response = self.client.post(reverse('user-list'), MOCK_USER_DATA)
+        user = User.objects.get(first_name=MOCK_USER_DATA['first_name'])
+        self.assertEqual(user.username, str(user.id))
+
 
 class QualificationTestCase(APITestCase):
 

@@ -20,7 +20,8 @@ class UserManager(BaseUserManager):
     def create_user(self, first_name, last_name, password=None, **kwargs):
         """
         Creates and saves a user with the given name and password and returns
-        the User object.
+        the User object. The user will have their username assigned to their
+        database ID in a post-save signal (defined in this file).
         """
         if not first_name and last_name:
             raise ValueError('Users must have a first and last name')
@@ -32,11 +33,6 @@ class UserManager(BaseUserManager):
         )
         user.set_password(password)
         user.save(using=self._db)
-        # TODO: We can ensure username=ID by saving twice, but it seems
-        # inefficient. I *think* we can get a provisional ID by calling
-        # the constructor; I'll look into it --sdob
-        user.username = user.id
-        user.save()
         return user
 
     def create_superuser(self, first_name, last_name, password, **kwargs):
@@ -285,3 +281,13 @@ class User(AbstractUser):
         # This is principally used in the shell and isn't particularly
         # useful for 
         return '{} (CFT #{})'.format(self.get_full_name(), self.id)
+
+
+# When a User object is created, set their username to their ID and save
+# the object again
+def set_username(sender, **kwargs):
+    user = kwargs['instance']
+    if kwargs['created']:
+        user.username = user.id
+        user.save()
+models.signals.post_save.connect(set_username, User)
