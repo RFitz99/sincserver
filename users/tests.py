@@ -130,6 +130,19 @@ class UserCreationTestCase(APITestCase):
         self.do.save()
         self.do.become_dive_officer()
 
+    def test_dive_officers_can_create_users(self):
+        self.client.force_authenticate(self.do)
+        result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+
+    def test_admins_can_create_users(self):
+        staff = User.objects.create_user(first_name='Staff', last_name='Member')
+        staff.is_staff = True
+        staff.save()
+        self.client.force_authenticate(staff)
+        result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+
     def test_creating_a_user_adds_that_user_to_a_club(self):
         self.client.force_authenticate(self.do)
         result = self.client.post(reverse('user-list'), MOCK_USER_DATA)

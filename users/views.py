@@ -45,11 +45,18 @@ class UserViewSet(viewsets.ModelViewSet):
         # either a superuser/staff member explicitly includes a club ID in the
         # request, or a Dive Officer is creating a member (in which case we'll
         # use their club)
+
+        # Initially, club is None
+        club = None
         if self.request.user.is_superuser or self.request.user.is_staff:
+            # If the user is an admin, then let them specify the club
             if 'club' in self.request.data:
                 club = get_object_or_404(Club, pk=self.request.data['club'])
         else:
+            # Otherwise, the club created should be the same as the user's
+            # club
             club = self.request.user.club
+
         instance = serializer.save(club=club)
 
     def get_queryset(self):
