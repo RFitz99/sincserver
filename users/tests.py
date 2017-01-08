@@ -159,7 +159,7 @@ class UserCreationTestCase(APITestCase):
         u = User.objects.get(first_name='Joe', last_name='Bloggs')
         self.assertEqual(u.club, self.club)
 
-    def test_creating_a_user_allows_explicit_club_field(self):
+    def test_superusers_can_set_club_field(self):
         su = User.objects.create_superuser(first_name='Super', last_name='User', password='password')
         dauntsac = Club.objects.create(name='Daunt SAC')
         self.client.force_authenticate(su)
@@ -169,6 +169,17 @@ class UserCreationTestCase(APITestCase):
         self.assertEqual(result.status_code, status.HTTP_201_CREATED)
         u = User.objects.get(first_name='Joe')
         self.assertEqual(u.club, dauntsac)
+
+    def test_dive_officers_cannot_set_club_field(self):
+        self.client.force_authenticate(self.do)
+        dauntsac = Club.objects.create(name='Daunt SAC')
+        data = MOCK_USER_DATA.copy()
+        data['club'] = dauntsac.id
+        result = self.client.post(reverse('user-list'), data)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        u = User.objects.get(first_name='Joe')
+        self.assertEqual(u.club, self.do.club)
+
 
 class QualificationTestCase(APITestCase):
 
