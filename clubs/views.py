@@ -55,12 +55,10 @@ class RegionViewSet(viewsets.ModelViewSet):
     queryset = Region.objects.all()
 
     # Permissions for regions.
-    # 1. User must be authenticated.
-    # 2. User must be an admin OR an RDO OR a club DO.
-    # 3. Only admins can perform unsafe (CUD) operations.
+    # 1. User must be authenticated to view.
+    # 2. Only admins can perform unsafe (CUD) operations.
     permission_classes = [
         IsAuthenticated,
-        (C(IsAdmin) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
         (C(IsAdmin) | C(IsSafeMethod)),
     ]
 
