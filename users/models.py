@@ -5,7 +5,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext as _
 
-from clubs.models import Club, CommitteePosition
+from clubs.models import Club, CommitteePosition, Region
 from clubs import roles
 from qualifications.models import Qualification
 from users import choices
@@ -187,8 +187,16 @@ class User(AbstractUser):
         # TODO: fix this
         return 'LAPSED'
 
+
     ############################################################################
-    # Committee role setters ('become_$ROLE') and getters ('is_$ROLE')
+    # Higher-echelon role methods
+    ############################################################################
+
+    def is_regional_dive_officer(self):
+        return any([region.dive_officer == self for region in Region.objects.all()])
+
+    ############################################################################
+    # Club committee role setters ('become_$ROLE') and getters ('is_$ROLE')
     ############################################################################
 
     def __adopt_role(self, role):
