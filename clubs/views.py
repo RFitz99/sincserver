@@ -5,8 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from clubs.models import Club, Region
+from clubs.roles import DIVE_OFFICER
 from clubs.serializers import RegionSerializer
-from permissions.permissions import IsAdminOrDiveOfficer, IsAdminOrReadOnly, IsDiveOfficer
+from permissions.permissions import IsAdminOrDiveOfficer, IsAdminOrRegionalDiveOfficerOrDiveOfficer, IsAdminOrReadOnly, IsDiveOfficer
 from qualifications.models import Qualification
 from qualifications.serializers import QualificationSerializer
 from users.models import User
@@ -17,7 +18,7 @@ from users.choices import STATUS_CURRENT
 class ClubViewSet(viewsets.ModelViewSet):
     
     # TODO: check object permissions
-    permission_classes= (IsAdminOrDiveOfficer,)
+    permission_classes= (IsAuthenticated, IsAdminOrDiveOfficer, IsAdminOrReadOnly,)
 
     queryset = Club.objects.all()
 
@@ -38,42 +39,11 @@ class ClubViewSet(viewsets.ModelViewSet):
         serializer = QualificationSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    @list_route(methods=['get'])
-    def dive_officers(self, request):
-        """
-        Return a list of club dive officers with their contact details.
-        This is only available to system administrators (who can see
-        all of the DOs or filter by region) and club Dive Officers
-        (who can see DOs in their region).
-        """
-        # TODO: allow RDOs to see DOs in their region
-        user = request.user
-        if not (user.is_admin() or user.is_dive_officer()):
-            raise PermissionDenied
-
-        # We only want Dive Officers
-        queryset = User.objects.filter(committee_positions__role=DIVE_OFFICER)
-
-        # If the user is an admin, they can opt to filter by region or
-        # just see all Dive Officers
-        if user.is_admin():
-            if 'region' in request.data:
-                queryset = queryset.filter(club__region=request.data['region'])
-        else:
-            queryset = queryset.filter(club__region=user.club.region)
-
-        # We only want the contact details of these Dive Officers
-        fields = fieldsets.CONTACT_DETAILS
-
-        # Serialize and return the data
-        serializer = UserSerializer(dive_officers, fields=fields, many=True)
-        return Response(serializer.data)
-
 
 class RegionViewSet(viewsets.ModelViewSet):
 
     queryset = Region.objects.all()
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdminOrRegionalDiveOfficerOrDiveOfficer, IsAdminOrReadOnly)
     serializer_class = RegionSerializer
 
     @detail_route(methods=['GET'], url_path='active-instructors')
@@ -111,4 +81,29 @@ class RegionViewSet(viewsets.ModelViewSet):
         # so we have to do it on the retrieved queryset.
         queryset = [u for u in queryset if u.current_membership_status() == STATUS_CURRENT]
         serializer = UserSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @detail_route(methods=['get'])
+    def dive_officers(self, request, pk=None):
+        """
+        Return a list of club dive officers with their contact details.
+        This is only available to system administrators (who can see
+        all of the DOs or filter by region) and club Dive Officers
+        (who can see DOs in their region).
+        """
+        region = self.get_object()
+
+        # TODO: allow RDOs to see DOs in their region
+        user = request.user
+        if not (user.is_admin() or user.is_dive_officer()):
+            raise PermissionDenied
+
+        # We want users from this region who are dive officers
+        queryset = User.objects.filter(club__region=region, committee_positions__role=DIVE_OFFICER)
+
+        # We only want the contact details of these Dive Officers
+        fields = fieldsets.CONTACT_DETAILS
+
+        # Serialize and return the data
+        serializer = UserSerializer(dive_officers, fields=fields, many=True)
         return Response(serializer.data)
