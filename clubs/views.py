@@ -8,7 +8,7 @@ from rest_condition import C, ConditionalPermission
 
 from clubs.models import Club, Region
 from clubs.roles import DIVE_OFFICER
-from clubs.serializers import RegionSerializer
+from clubs.serializers import ClubSerializer, RegionSerializer
 from permissions.permissions import IsAdmin, IsRegionalDiveOfficer, IsDiveOfficer, IsSafeMethod
 from qualifications.models import Qualification
 from qualifications.serializers import QualificationSerializer
@@ -30,6 +30,7 @@ class ClubViewSet(viewsets.ModelViewSet):
     ]
 
     queryset = Club.objects.all()
+    serializer_class = ClubSerializer
 
     @detail_route(methods=['GET'])
     def qualifications(self, request, pk=None):
