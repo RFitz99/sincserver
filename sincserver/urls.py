@@ -30,12 +30,16 @@ router.register(r'clubs', ClubViewSet, base_name='club')
 router.register(r'courses', CourseViewSet, base_name='course')
 router.register(r'regions', RegionViewSet, base_name='region')
 
+clubs_router = nested_routers.NestedSimpleRouter(router, r'clubs', lookup='club')
+clubs_router.register(r'users', UserViewSet, base_name='club-users')
+
 users_router = nested_routers.NestedSimpleRouter(router, r'users', lookup='user')
 users_router.register(r'qualifications', QualificationViewSet, base_name='user-qualifications')
 
 urlpatterns = [
-        #url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
-        url(r'^auth/login/', obtain_auth_token), # Respond to username/password pairs with auth tokens
-        url(r'^', include(router.urls)), # All other URLs are passed to the default router
-        url(r'^', include(users_router.urls)),
+    #url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^auth/login/', obtain_auth_token), # Respond to username/password pairs with auth tokens
+    url(r'^', include(router.urls)), # All other URLs are passed to the default router
+    url(r'^', include(users_router.urls)),
+    url(r'^', include(clubs_router.urls)),
 ]
