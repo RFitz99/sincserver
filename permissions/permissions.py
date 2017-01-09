@@ -57,6 +57,18 @@ class IsCommitteeMember(permissions.BasePermission):
         return request.user.has_any_role()
 
 
+class IsRegionalDiveOfficer(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return request.user and request.user.is_regional_dive_officer()
+
+
+class IsSafeMethod(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        return request.method in permissions.SAFE_METHODS
+
+
 
 class IsAdminOrDiveOfficer(permissions.BasePermission):
 
