@@ -42,8 +42,9 @@ class UserManager(BaseUserManager):
         """
         # Create and save a standard user
         user = self.create_user(first_name, last_name, password)
-        # Set the 'is_superuser' flag
+        # Set the 'is_superuser' and 'is_staff' flag
         user.is_superuser = True
+        user.is_staff = True
         # Save a second time
         user.save(using=self._db)
         return user
