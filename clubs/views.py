@@ -4,10 +4,12 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from rest_condition import C, ConditionalPermission
+
 from clubs.models import Club, Region
 from clubs.roles import DIVE_OFFICER
 from clubs.serializers import RegionSerializer
-from permissions.permissions import IsAdminOrDiveOfficer, IsAdminOrRegionalDiveOfficerOrDiveOfficer, IsAdminOrReadOnly, IsDiveOfficer
+from permissions.permissions import IsAdmin, IsRegionalDiveOfficer, IsDiveOfficer, IsSafeMethod
 from qualifications.models import Qualification
 from qualifications.serializers import QualificationSerializer
 from users.models import User
@@ -16,9 +18,16 @@ from users.serializers import UserSerializer
 from users.choices import STATUS_CURRENT
 
 class ClubViewSet(viewsets.ModelViewSet):
-    
-    # TODO: check object permissions
-    permission_classes= (IsAuthenticated, IsAdminOrDiveOfficer, IsAdminOrReadOnly,)
+
+    # Permissions for viewing clubs.
+    # 1. User must be authenticated.
+    # 2. User must be an admin, OR an RDO, OR a club DO.
+    # 3. Only admins can perform unsafe (CUD) operations
+    permission_classes = [
+        IsAuthenticated,
+        (C(IsAdmin) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
+        (C(IsAdmin) | C(IsSafeMethod)),
+    ]
 
     queryset = Club.objects.all()
 
@@ -43,7 +52,17 @@ class ClubViewSet(viewsets.ModelViewSet):
 class RegionViewSet(viewsets.ModelViewSet):
 
     queryset = Region.objects.all()
-    permission_classes = (IsAuthenticated, IsAdminOrRegionalDiveOfficerOrDiveOfficer, IsAdminOrReadOnly)
+
+    # Permissions for regions.
+    # 1. User must be authenticated.
+    # 2. User must be an admin OR an RDO OR a club DO.
+    # 3. Only admins can perform unsafe (CUD) operations.
+    permission_classes = [
+        IsAuthenticated,
+        (C(IsAdmin) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
+        (C(IsAdmin) | C(IsSafeMethod)),
+    ]
+
     serializer_class = RegionSerializer
 
     @detail_route(methods=['GET'], url_path='active-instructors')
