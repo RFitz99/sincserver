@@ -24,7 +24,8 @@ class Club(models.Model):
     name = models.CharField(max_length=200)
 
     # The club's region
-    region = models.ForeignKey('Region', blank=True, null=True)
+    region = models.ForeignKey('Region', blank=True, null=True,
+                              on_delete=models.SET_NULL)
 
     # When the club was founded (almost certainly before the club was added
     # to the system
