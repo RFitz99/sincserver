@@ -93,6 +93,7 @@ class ActiveInstructorsTestCase(APITestCase):
         self.south.dive_officer = rdo
         self.south.save()
         self.client.force_authenticate(rdo)
+        self.assertTrue(rdo.is_regional_dive_officer())
         result = self.client.get(reverse('region-active-instructors', args=[self.south.id]))
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         data = result.data

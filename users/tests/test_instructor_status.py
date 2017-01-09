@@ -33,9 +33,3 @@ class CheckInstructorStatusTestCase(APITestCase):
 
     def test_is_instructor_returns_false_when_it_should(self):
         self.assertFalse(self.u2.is_instructor())
-
-    def test_querying_instructor_list_returns_expected_result(self):
-        self.client.force_authenticate(self.do)
-        result = self.client.get(reverse('user-active-instructors'))
-        self.assertEqual(result.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(result.data), 1)
