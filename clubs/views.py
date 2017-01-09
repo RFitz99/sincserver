@@ -51,7 +51,8 @@ class ClubViewSet(viewsets.ModelViewSet):
             raise PermissionDenied
         # Otherwise, proceed
         queryset = User.objects.filter(club=club)
-        serializer = UserSerializer(queryset, many=True)
+        fields = ['id', 'email', 'first_name', 'last_name', 'readable_committee_positions']
+        serializer = UserSerializer(queryset, many=True, fields=fields)
         return Response(serializer.data)
 
 
