@@ -61,3 +61,13 @@ class IsAdminOrDiveOfficer(permissions.BasePermission):
         if request.user.is_anonymous:
             return False
         return (is_admin(request.user) or request.user.is_dive_officer())
+
+
+class IsAdminOrRegionalDiveOfficerOrDiveOfficer(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        if not request.user:
+            return None
+        if request.user.is_anonymous:
+            return False
+        return (is_admin(request.user) or request.user.is_regional_dive_officer() or request.user.is_dive_officer())
