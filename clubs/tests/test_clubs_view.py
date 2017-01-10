@@ -69,9 +69,11 @@ class ClubCreateTestCase(APITestCase):
         self.staff = User.objects.create_user(first_name='Staff', last_name='Member', is_staff=True)
 
     def test_staff_can_create_club(self):
+        region = Region.objects.create(name='South')
         self.client.force_authenticate(self.staff)
         data = {
             'name': 'Daunt',
+            'region': region.id,
         }
         response = self.client.post(reverse('club-list'), data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
