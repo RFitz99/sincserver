@@ -19,15 +19,14 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user and request.user.is_admin()
 
 
-
 class IsDiveOfficer(permissions.BasePermission):
     def has_permission(self, request, view):
         print('IsDO: checking permissions')
         return request.user.is_dive_officer()
     
-    def has_object_permission(self, request, *args, **kwargs):
+    def has_object_permission(self, request, view, obj):
         print('IsDO: checking object permissions')
-        return request.user.is_dive_officer()
+        return request.user.is_dive_officer() and request.user.club == obj.club
 
 
 
