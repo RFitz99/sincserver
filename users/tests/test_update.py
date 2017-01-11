@@ -28,6 +28,18 @@ class UserUpdateTestCase(APITestCase):
         self.csac = Club.objects.create(name='CSAC')
         self.other_member = User.objects.create_user('Other', 'Member', club=self.csac)
 
+    ###########################################################################
+    # Administrators can update any member; DOs can update members in
+    # their own club; and users can edit themselves. We expect these
+    # tests to succeed.
+    ###########################################################################
+
+    def test_admins_can_update_members(self):
+        staff = User.objects.create_user('Staff', 'Member', is_staff=True)
+        self.client.force_authenticate(staff)
+        response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_dive_officers_can_update_their_members(self):
         self.client.force_authenticate(self.do)
         response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
@@ -40,13 +52,22 @@ class UserUpdateTestCase(APITestCase):
         response = self.client.put(reverse('user-detail', args=[self.other_member.id]), UPDATE_DATA)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
-    def test_admins_can_update_members(self):
-        staff = User.objects.create_user('Staff', 'Member', is_staff=True)
-        self.client.force_authenticate(staff)
-        response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
     def test_users_can_update_their_own_profile(self):
         self.client.force_authenticate(self.member)
         response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+    ###########################################################################
+    # Unauthenticated users cannot update users, and users cannot
+    # update other users.
+    ###########################################################################
+
+    def test_unauthenticated_users_cannot_update_users(self):
+        response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_users_cannot_update_other_profiles(self):
+        self.client.force_authenticate(self.member)
+        response = self.client.put(reverse('user-detail', args=[self.other_member.id]), UPDATE_DATA)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
