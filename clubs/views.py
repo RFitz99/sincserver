@@ -9,7 +9,7 @@ from rest_condition import C, ConditionalPermission
 from clubs.models import Club, Region
 from clubs.roles import DIVE_OFFICER
 from clubs.serializers import ClubSerializer, RegionSerializer
-from permissions.permissions import IsAdmin, IsRegionalDiveOfficer, IsDiveOfficer, IsSafeMethod
+from permissions.permissions import IsAdminUser, IsRegionalDiveOfficer, IsDiveOfficer, IsSafeMethod
 from qualifications.models import Qualification
 from qualifications.serializers import QualificationSerializer
 from users.models import User
@@ -25,8 +25,8 @@ class ClubViewSet(viewsets.ModelViewSet):
     # 3. Only admins can perform unsafe (CUD) operations
     permission_classes = [
         IsAuthenticated,
-        (C(IsAdmin) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
-        (C(IsAdmin) | C(IsSafeMethod)),
+        (C(IsAdminUser) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
+        (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
     queryset = Club.objects.all()
@@ -60,7 +60,7 @@ class RegionViewSet(viewsets.ModelViewSet):
     # 2. Only admins can perform unsafe (CUD) operations.
     permission_classes = [
         IsAuthenticated,
-        (C(IsAdmin) | C(IsSafeMethod)),
+        (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
     serializer_class = RegionSerializer
