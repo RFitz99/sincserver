@@ -29,6 +29,12 @@ class IsDiveOfficer(permissions.BasePermission):
         return request.user.is_dive_officer() and request.user.club == obj.club
 
 
+class IsSameUser(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj
+
+
 
 class IsDiveOfficerOrReadOnly(permissions.BasePermission):
     """
