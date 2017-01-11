@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404, render
+from rest_condition import C
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -22,7 +23,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # Our default permission classes: you must be authenticated to do
     # anything.
     # TODO: this should be exceptionally tight: IsAdminUser at least.
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAdminUser,)
 
     # Our default queryset. This is defensive programming: if all else
     # fails, the requesting user will be sent an empty list.
@@ -44,6 +45,12 @@ class UserViewSet(viewsets.ModelViewSet):
         'update': [permissions.IsDiveOfficerOrOwnProfile],
         # Only admins can delete users
         'delete': [IsAdminUser],
+        # Admins and DOs can list users (but the queryset needs to be
+        # filtered
+        'list': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
+        # Admins and DOs can retrieve users (but the queryset needs to
+        # be filtered)
+        'retrieve': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
     }
 
     # When deciding what list of permissions to check, try first to
@@ -74,7 +81,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # requesting user's club.
         else:
             club = self.request.user.club
-
+        # Save the instance.
         instance = serializer.save(club=club)
 
     # By default, when we are coming up with a list, what we do is
@@ -98,23 +105,25 @@ class UserViewSet(viewsets.ModelViewSet):
     # When the user asks for a list of Users, check their status and
     # filter the queryset accordingly.
     def list(self, request, club_pk=None, region_pk=None):
-        # Start with en empty list.
-        queryset = User.objects.none()
+        # Our permission_classes setting for list actions means that
+        # the user is either an admin or a dive officer. If the user
+        # is an admin, we'll let them view the whole list of users;
+        # otherwise, we'll filter to limit results to the DO's club.
 
         # Find the user making the request.
         user = self.request.user
 
-        # Set the queryset using the user's staff/committee position
-        # standing.
-        if user.is_superuser:
+        # Set the initial queryset. If the user is an admin, then
+        # they can view the entire list.
+        if user.is_staff:
             queryset = User.objects.all()
-        elif user.has_any_role():
-            queryset = User.objects.filter(club=self.request.user.club)
+        # If the user is not an admin, then they're a DO; return
+        # only the members of their club.
         else:
-            queryset = User.objects.filter(user=self.request.user)
+            queryset = User.objects.filter(club=user.club)
 
-        # Optionally, filter further by club (DOs requesting a list of their
-        # club members will be here).
+        # If we are looking for the users within a specific club
+        # (i.e., an admin has made the request), then filter further.
         if club_pk is not None:
             queryset = queryset.filter(club__id=club_pk)
 
