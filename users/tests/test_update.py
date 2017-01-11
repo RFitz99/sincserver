@@ -45,3 +45,8 @@ class UserUpdateTestCase(APITestCase):
         self.client.force_authenticate(staff)
         response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_users_can_update_their_own_profile(self):
+        self.client.force_authenticate(self.member)
+        response = self.client.put(reverse('user-detail', args=[self.member.id]), UPDATE_DATA)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

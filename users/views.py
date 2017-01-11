@@ -12,7 +12,7 @@ from clubs.serializers import CommitteePositionSerializer
 from courses.models import Course
 from courses.serializers import CourseSerializer
 from permissions import permissions
-from permissions.permissions import IsAdminUser
+from permissions.permissions import IsAdminUser, IsSameUser
 from users import fieldsets
 from users.models import User
 from users.serializers import UserSerializer
@@ -40,8 +40,9 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes_by_action = {
         # Dive Officers can create users
         'create': [permissions.IsAdminOrDiveOfficer],
-        # Admins and DOs can update
-        'update': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
+        # Admins can update anyone; DOs can update members of their club;
+        # users can update themselves
+        'update': [(C(IsAdminUser) | C(permissions.IsDiveOfficer)) | C(IsSameUser)],
         # Only admins can delete users
         'delete': [IsAdminUser],
         # Admins and DOs can list users (but the queryset needs to be
