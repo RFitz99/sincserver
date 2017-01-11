@@ -81,3 +81,14 @@ class UserListTestCase(APITestCase):
         self.client.force_authenticate(u)
         response = self.client.get(reverse('user-list'))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+    ###########################################################################
+    # A special list method is '/users/me': Every authenticated user may
+    # view their own profile.
+    ###########################################################################
+
+    def test_authenticated_users_can_view_their_profile(self):
+        self.client.force_authenticate(self.do)
+        response = self.client.get(reverse('user-me'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -49,6 +49,8 @@ class UserViewSet(viewsets.ModelViewSet):
         # Admins and DOs can retrieve users (but the queryset needs to
         # be filtered)
         'retrieve': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
+        # Authenticated users can view their own profile
+        'me': [IsAuthenticated],
     }
 
     # When deciding what list of permissions to check, try first to
