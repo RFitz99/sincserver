@@ -32,6 +32,7 @@ class ClubViewSet(viewsets.ModelViewSet):
     queryset = Club.objects.all()
     serializer_class = ClubSerializer
 
+    # I don't understand what this method does!
     @detail_route(methods=['GET'])
     def qualifications(self, request, pk=None):
         club = self.get_object()
