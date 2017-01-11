@@ -16,8 +16,6 @@ from users import fieldsets
 from users.models import User
 from users.serializers import UserSerializer
 
-# 
-
 class UserViewSet(viewsets.ModelViewSet):
 
     # Our default permission classes: you must be authenticated to do
@@ -55,12 +53,15 @@ class UserViewSet(viewsets.ModelViewSet):
 
     # When deciding what list of permissions to check, try first to
     # find a list specified by 'permission_classes_by action'. Fall back
-    # to using the defaeult permission classes.
+    # to using the default permission classes.
+    #
+    # Because all user-related options require the user to be authenticated,
+    # we prepend IsAuthenticated to the list
     def get_permissions(self):
         try:
-            return [permission() for permission in self.permission_classes_by_action[self.action]]
+            return [IsAuthenticated()] + [permission() for permission in self.permission_classes_by_action[self.action]]
         except KeyError:
-            return [permission() for permission in self.permission_classes]
+            return [IsAuthenticated()] + [permission() for permission in self.permission_classes]
 
     # When we actually go ahead and create a new User object, we want to be
     # able to assign some attributes that we don't require (or allow)
@@ -123,7 +124,7 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = User.objects.filter(club=user.club)
 
         # If we are looking for the users within a specific club
-        # (i.e., an admin has made the request), then filter further.
+        # (e.g., an admin has made the request), then filter further.
         if club_pk is not None:
             queryset = queryset.filter(club__id=club_pk)
 
