@@ -3,7 +3,7 @@ from rest_condition import C
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from clubs.models import Club, CommitteePosition
@@ -11,8 +11,7 @@ from clubs.roles import DIVE_OFFICER
 from clubs.serializers import CommitteePositionSerializer
 from courses.models import Course
 from courses.serializers import CourseSerializer
-from permissions import permissions
-from permissions.permissions import IsAdminUser, IsSameUser
+from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSameUser
 from users import fieldsets
 from users.models import User
 from users.serializers import UserSerializer
@@ -38,19 +37,19 @@ class UserViewSet(viewsets.ModelViewSet):
     # what they're doing) to be able to delete users, while every user
     # is allowed to edit their own profile.
     permission_classes_by_action = {
-        # Dive Officers can create users
-        'create': [permissions.IsAdminOrDiveOfficer],
+        # Admins and Dive Officers can create users
+        'create': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Admins can update anyone; DOs can update members of their club;
         # users can update themselves
-        'update': [(C(IsAdminUser) | C(permissions.IsDiveOfficer)) | C(IsSameUser)],
+        'update': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
         # Only admins can delete users
         'delete': [IsAdminUser],
         # Admins and DOs can list users (but the queryset needs to be
         # filtered
-        'list': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
+        'list': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Admins and DOs can retrieve users (but the queryset needs to
         # be filtered)
-        'retrieve': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
+        'retrieve': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Authenticated users can view their own profile
         'me': [IsAuthenticated],
     }
