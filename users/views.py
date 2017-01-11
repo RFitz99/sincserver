@@ -3,7 +3,7 @@ from rest_condition import C
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, DjangoObjectPermissions
 from rest_framework.response import Response
 
 from clubs.models import Club, CommitteePosition
@@ -12,6 +12,7 @@ from clubs.serializers import CommitteePositionSerializer
 from courses.models import Course
 from courses.serializers import CourseSerializer
 from permissions import permissions
+from permissions.permissions import IsAdminUser
 from users import fieldsets
 from users.models import User
 from users.serializers import UserSerializer
@@ -39,8 +40,8 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes_by_action = {
         # Dive Officers can create users
         'create': [permissions.IsAdminOrDiveOfficer],
-        # Users can update their own profiles
-        'update': [permissions.IsDiveOfficerOrOwnProfile],
+        # Admins and DOs can update
+        'update': [C(IsAdminUser) | C(permissions.IsDiveOfficer)],
         # Only admins can delete users
         'delete': [IsAdminUser],
         # Admins and DOs can list users (but the queryset needs to be
@@ -95,6 +96,10 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Find the user making the request
         user = self.request.user
+
+        # Admins can view everyone
+        if user.is_staff:
+            return User.objects.all()
 
         # TODO: We'll want a more sophisticated system eventually,
         # but for the moment we'll just filter by club committee position;
