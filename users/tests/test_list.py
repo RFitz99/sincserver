@@ -77,7 +77,7 @@ class UserListTestCase(APITestCase):
 
     def test_regular_users_cannot_list_all_users(self):
         # Pick a member of UCCSAC who is not the DO
-        u = User.objects.filter(club=self.uccsac, id__ne=self.do.id)[0]
-        self.force_authenticate(u)
+        u = User.objects.filter(club=self.uccsac).exclude(id=self.do.id)[0]
+        self.client.force_authenticate(u)
         response = self.client.get(reverse('user-list'))
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
