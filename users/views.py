@@ -15,14 +15,28 @@ from users import fieldsets
 from users.models import User
 from users.serializers import UserSerializer
 
-# Create your views here.
+# 
+
 class UserViewSet(viewsets.ModelViewSet):
 
+    # Our default permission classes: you must be authenticated to do
+    # anything.
+    # TODO: this should be exceptionally tight: IsAdminUser at least.
     permission_classes = (IsAuthenticated,)
 
-    queryset = User.objects.none() # Default to nothing, just for safety
+    # Our default queryset. This is defensive programming: if all else
+    # fails, the requesting user will be sent an empty list.
+    queryset = User.objects.none()
+
+    # We use the UserSerializer class, by default, to turn User objects
+    # into their JSON representations.
     serializer_class = UserSerializer
 
+    # The permissions that the requesting user must have depend on what
+    # the user is trying to do: for example, Dive Officers can create
+    # new users, but we only want system administrators (who will know
+    # what they're doing) to be able to delete users, while every user
+    # is allowed to edit their own profile.
     permission_classes_by_action = {
         # Dive Officers can create users
         'create': [permissions.IsAdminOrDiveOfficer],
@@ -32,58 +46,82 @@ class UserViewSet(viewsets.ModelViewSet):
         'delete': [IsAdminUser],
     }
 
+    # When deciding what list of permissions to check, try first to
+    # find a list specified by 'permission_classes_by action'. Fall back
+    # to using the defaeult permission classes.
     def get_permissions(self):
-        # TODO: Rather than enumerate these explicitly here, we should
-        # do something more elegant. (I just need to work out what that is.)
         try:
             return [permission() for permission in self.permission_classes_by_action[self.action]]
         except KeyError:
             return [permission() for permission in self.permission_classes]
 
+    # When we actually go ahead and create a new User object, we want to be
+    # able to assign some attributes that we don't require (or allow)
+    # the requesting user to specify. We do that here.
     def perform_create(self, serializer):
         # When we create a new user, they should be added to a club if at all possible;
         # either a superuser/staff member explicitly includes a club ID in the
         # request, or a Dive Officer is creating a member (in which case we'll
         # use their club)
 
-        # Initially, club is None
+        # Initially, club is None. We'll try to assign one.
         club = None
+        # If the user is an admin, then let them specify the club.
         if self.request.user.is_superuser or self.request.user.is_staff:
-            # If the user is an admin, then let them specify the club
             if 'club' in self.request.data:
                 club = get_object_or_404(Club, pk=self.request.data['club'])
+        # Otherwise, the club should be the same as the
+        # requesting user's club.
         else:
-            # Otherwise, the club created should be the same as the user's
-            # club
             club = self.request.user.club
 
         instance = serializer.save(club=club)
 
+    # By default, when we are coming up with a list, what we do is
+    # check the user's committee standing. If they hold a committee
+    # position, they are allowed (at most) to view a list of members
+    # of their own club; otherwise they are allowed to view a list
+    # containing exactly one User: themselves.
     def get_queryset(self):
-        user = self.request.user # This is the user making the request
+        # Find the user making the request
+        user = self.request.user
 
         # TODO: We'll want a more sophisticated system eventually,
         # but for the moment we'll just filter by club committee position;
         # if you're on the committee, you can see what's going on.
-        # Field restrictions are specified in serializers.py
+        # Field restrictions are specified in serializers.py.
         if CommitteePosition.objects.filter(user=user, club=user.club).exists():
             return User.objects.filter(club=user.club)
         return User.objects.filter(id=user.id)
 
 
+    # When the user asks for a list of Users, check their status and
+    # filter the queryset accordingly.
     def list(self, request, club_pk=None, region_pk=None):
+        # Start with en empty list.
         queryset = User.objects.none()
+
+        # Find the user making the request.
         user = self.request.user
+
+        # Set the queryset using the user's staff/committee position
+        # standing.
         if user.is_superuser:
             queryset = User.objects.all()
         elif user.has_any_role():
             queryset = User.objects.filter(club=self.request.user.club)
         else:
             queryset = User.objects.filter(user=self.request.user)
-        # Optionally, filter by club
+
+        # Optionally, filter further by club (DOs requesting a list of their
+        # club members will be here).
         if club_pk is not None:
-            queryset = User.objects.filter(club__id=club_pk)
+            queryset = queryset.filter(club__id=club_pk)
+
+        # Serialize the queryset to JSON.
         serializer = self.serializer_class(queryset, many=True)
+
+        # Return a Response.
         return Response(serializer.data)
 
 
@@ -91,32 +129,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # Extra routes
     ###########################################################################
 
-
-    if False:
-        @list_route(methods=['get'], url_path='active-instructors')
-        def active_instructors(self, request):
-            """
-            Return a list of those active instructors that the requesting
-            user is allowed to view.
-            """
-            user = request.user
-            # Lists of active instructors are available to staff,
-            # club DOs, and noone else
-            if not (user.is_admin() or user.is_dive_officer()):
-                raise PermissionDenied
-
-            # Queryset is initially all instructors
-            queryset = User.objects.filter(qualifications__certificate__is_instructor_certificate=True)
-
-            # If the user isn't staff, then filter to the region
-            if not (user.is_staff or user.is_superuser):
-                queryset = queryset.filter(club__region=user.club.region)
-
-            # Serialize the queryset and return it
-            serializer = self.serializer_class(queryset, many=True)
-            return Response(serializer.data)
-
-
+    # Tell us which courses this user has organized.
     @detail_route(methods=['get'], url_path='courses-organized')
     def courses_organized(self, request, pk=None):
         """
@@ -128,6 +141,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+    # Tell us which courses this user has organized.
     @detail_route(methods=['get'], url_path='courses-taught')
     def courses_taught(self, request, pk=None):
         """
@@ -140,6 +154,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+    # Return this user's current membership status.
     @detail_route(methods=['get'])
     def current_membership_status(self, request, pk=None):
         """
@@ -152,39 +167,10 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-    if False:
-        @list_route(methods=['get'])
-        def dive_officers(self, request):
-            """
-            Return a list of club dive officers with their contact details.
-            This is only available to system administrators (who can see
-            all of the DOs or filter by region) and club Dive Officers
-            (who can see DOs in their region).
-            """
-            # TODO: allow RDOs to see DOs in their region
-            user = request.user
-            if not (user.is_admin() or user.is_dive_officer()):
-                raise PermissionDenied
-
-            # We only want Dive Officers
-            queryset = User.objects.filter(committee_positions__role=DIVE_OFFICER)
-
-            # If the user is an admin, they can opt to filter by region or
-            # just see all Dive Officers
-            if user.is_admin():
-                if 'region' in request.data:
-                    queryset = queryset.filter(club__region=request.data['region'])
-            else:
-                queryset = queryset.filter(club__region=user.club.region)
-
-            # We only want the contact details of these Dive Officers
-            fields = fieldsets.CONTACT_DETAILS
-
-            # Serialize and return the data
-            serializer = UserSerializer(dive_officers, fields=fields, many=True)
-            return Response(serializer.data)
-
-
+    # Return the requesting user's own profile. This method
+    # doesn't require us to know the user's ID; we get it
+    # from the request (which automatically does a DB lookup
+    # to populate its 'user' attribute anyway).
     @list_route(methods=['get'])
     def me(self, request):
         """
