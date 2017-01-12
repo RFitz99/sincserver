@@ -35,10 +35,10 @@ class Course(models.Model):
     region = models.ForeignKey('clubs.Region', blank=True, null=True)
 
     # Who's teaching this?
-    instructors = models.ManyToManyField(User, through='CourseInstruction', related_name='courses_instructed')
+    instructors = models.ManyToManyField(User, through='courses.CourseInstruction', related_name='courses_instructed')
 
     # Who's attending
-    students = models.ManyToManyField(User, through='CourseAttendance', related_name='courses_taught')
+    students = models.ManyToManyField(User, through='courses.CourseEnrolment', related_name='courses_enrolled')
 
     ############################################################################
     # Internal use
@@ -48,7 +48,7 @@ class Course(models.Model):
 
 
 
-class CourseAttendance(models.Model):
+class CourseEnrolment(models.Model):
 
     # Foreign keys to the member and course
     user = models.ForeignKey(User, on_delete=models.CASCADE)
