@@ -9,7 +9,7 @@ from rest_condition import C, ConditionalPermission
 from clubs.models import Club, Region
 from clubs.roles import DIVE_OFFICER
 from clubs.serializers import ClubSerializer, RegionSerializer
-from permissions.permissions import IsAdmin, IsRegionalDiveOfficer, IsDiveOfficer, IsSafeMethod
+from permissions.permissions import IsAdminUser, IsRegionalDiveOfficer, IsDiveOfficer, IsSafeMethod
 from qualifications.models import Qualification
 from qualifications.serializers import QualificationSerializer
 from users.models import User
@@ -21,21 +21,26 @@ class ClubViewSet(viewsets.ModelViewSet):
 
     # Permissions for viewing clubs.
     # 1. User must be authenticated.
-    # 2. User must be an admin, OR an RDO, OR a club DO.
+    # 2. User must be an admin, or an RDO, or a club DO.
     # 3. Only admins can perform unsafe (CUD) operations
     permission_classes = [
+        # 1. User must be authenticated
         IsAuthenticated,
-        (C(IsAdmin) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
-        (C(IsAdmin) | C(IsSafeMethod)),
+        # User must be admin / RDO / DO
+        (C(IsAdminUser) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
+        # Only admins may perform unsafe operations
+        (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
     queryset = Club.objects.all()
     serializer_class = ClubSerializer
 
+    # Given a club ID in the request URL, find all qualifications that
+    # have been granted to members of that club
     @detail_route(methods=['GET'])
     def qualifications(self, request, pk=None):
         club = self.get_object()
-        # the requesting user is a superuser or staff, then that's OK
+        # the requesting user is a superuser or staff, then that's OK.
         if request.user.is_superuser or request.user.is_staff:
             pass
         # Regular users can't access this at all
@@ -58,8 +63,10 @@ class RegionViewSet(viewsets.ModelViewSet):
     # 1. User must be authenticated to view.
     # 2. Only admins can perform unsafe (CUD) operations.
     permission_classes = [
+        # User must be authenticated
         IsAuthenticated,
-        (C(IsAdmin) | C(IsSafeMethod)),
+        # Only admins may perform unsafe operations
+        (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
     serializer_class = RegionSerializer

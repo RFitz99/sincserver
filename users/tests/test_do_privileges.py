@@ -17,30 +17,44 @@ class DiveOfficerPrivilegesTestCase(APITestCase):
         self.do.club = self.club
         self.do.save()
         self.do.become_dive_officer()
+        # Create another member for this club
+        User.objects.create_user('Other', 'Member', club=self.club)
         # Create another club with one member
         self.club2 = Club.objects.create(name='UCDSAC')
         self.other_user = User.objects.create_user(first_name='Other', last_name='User')
         self.other_user.club = self.club2
         self.other_user.save()
 
-    def test_can_retrieve_user_list(self):
+    def test_do_can_retrieve_user_list(self):
         # Log in
         self.client.force_authenticate(self.do)
         # Retrieve a list of all users
         result = self.client.get(reverse('user-list'))
         self.assertEqual(result.status_code, status.HTTP_200_OK) # Should return 200 OK
-        self.assertEqual(len(result.data), 1) # Should not return users from other clubs
-        # Create a new user (adding them to the club)
-        result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
-        self.assertEqual(result.status_code, status.HTTP_201_CREATED) # Should return 201 Created
-        # Retrieve a list of all users again
-        result = self.client.get(reverse('user-list'))
-        self.assertEqual(len(result.data), 2) # Should return a list containing the second user
+        expected_length = 2 # i.e., the DO and the other member from the same club
+        self.assertEqual(len(result.data), 2) 
 
-    def test_only_dive_officer_can_create_users(self):
+    def test_do_can_create_users(self):
+        self.client.force_authenticate(self.do)
+        result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
+        self.assertEqual(result.status_code, status.HTTP_201_CREATED)
+        # Check the DB: is the new user in there?
+        self.assertTrue(
+            User.objects.filter(first_name=MOCK_USER_DATA['first_name'],
+                                last_name=MOCK_USER_DATA['last_name']
+                               ).exists()
+        )
+
+    def test_regular_user_cannot_create_users(self):
         self.client.force_authenticate(self.other_user)
         result = self.client.post(reverse('user-list'), MOCK_USER_DATA)
         self.assertEqual(result.status_code, status.HTTP_403_FORBIDDEN)
+        # Confirm that the new user isn't in the database
+        self.assertFalse(
+            User.objects.filter(first_name=MOCK_USER_DATA['first_name'],
+                                last_name=MOCK_USER_DATA['last_name']
+                               ).exists()
+        )
 
     def test_dive_officer_can_view_club_qualifications(self):
         d1 = Certificate.objects.create(name='Trainee Diver')
@@ -50,4 +64,3 @@ class DiveOfficerPrivilegesTestCase(APITestCase):
         result = self.client.get(reverse('club-qualifications', args=[self.do.club.id]))
         self.assertEqual(result.status_code, status.HTTP_200_OK)
         self.assertEqual(len(result.data), 1)
-        #print(reverse('club-qualifications', args=[self.do.club.id]))
