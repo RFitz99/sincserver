@@ -52,7 +52,7 @@ class CourseEnrolment(models.Model):
 
     # Foreign keys to the member and course
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='courseenrolments')
 
     # Has the member's Dive Officer checked this?
     recommended_by_dive_officer = models.BooleanField(blank=True, default=False)
