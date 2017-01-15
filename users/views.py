@@ -59,7 +59,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # to using the default permission classes.
     #
     # Because all user-related options require the user to be authenticated,
-    # we prepend IsAuthenticated to the list
+    # we prepend IsAuthenticated to the list.
     def get_permissions(self):
         try:
             return [IsAuthenticated()] + [permission() for permission in self.permission_classes_by_action[self.action]]
