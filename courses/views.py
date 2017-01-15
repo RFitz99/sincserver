@@ -19,12 +19,13 @@ class CourseViewSet(viewsets.ModelViewSet):
             pass
         instance = serializer.save(
             creator=creator,
-            #club=club,
             organizer=organizer,
             region=region,
         )
 
     def list(self, request, region_pk=None):
+        # TODO: If the request contains a region ID, then filter the
+        # queryset to return only courses from that region.
         return super(CourseViewSet, self).list(request)
 
 class CourseEnrolmentViewSet(viewsets.ModelViewSet):
