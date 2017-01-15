@@ -23,6 +23,7 @@ class CourseSerializer(ModelSerializer):
             'id',
             'organizer',
             'region',
+            'courseenrolments',
         )
     certificate = CertificateSerializer()
     creator = UserSerializer(fields=('id', 'first_name', 'last_name',))
