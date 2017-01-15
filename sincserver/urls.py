@@ -36,6 +36,7 @@ clubs_router.register(r'users', UserViewSet, base_name='club-users')
 
 users_router = nested_routers.NestedSimpleRouter(router, r'users', lookup='user')
 users_router.register(r'qualifications', QualificationViewSet, base_name='user-qualifications')
+users_router.register(r'courses-organized', CourseViewSet, base_name='user-courses-organized')
 
 regions_router = nested_routers.NestedSimpleRouter(router, r'regions', lookup='region')
 regions_router.register(r'courses', CourseViewSet, base_name='region-course')
