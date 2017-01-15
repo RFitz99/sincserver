@@ -24,6 +24,9 @@ class CourseViewSet(viewsets.ModelViewSet):
             region=region,
         )
 
+    def list(self, request, region_pk=None):
+        return super(CourseViewSet, self).list(request)
+
 class CourseEnrolmentViewSet(viewsets.ModelViewSet):
 
     queryset = CourseEnrolment.objects.all()
