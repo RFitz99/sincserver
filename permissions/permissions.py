@@ -4,18 +4,15 @@ from clubs.models import CommitteePosition
 from clubs.roles import DIVE_OFFICER
 from users.models import User
 
-def is_admin(user):
-    return user.is_staff or user.is_superuser
-
 class IsAdminUser(permissions.IsAdminUser):
     def has_object_permission(self, request, view, obj):
-        return request.user and is_admin(request.user)
+        return request.user and request.user.is_staff
 
 
 
 class IsCommitteeMember(permissions.BasePermission):
     def has_permission(self, request, view):
-        return request.user.has_any_role()
+        return request.user and request.user.has_any_role()
 
 
 
