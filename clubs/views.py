@@ -19,21 +19,65 @@ from users.choices import STATUS_CURRENT
 
 class ClubViewSet(viewsets.ModelViewSet):
 
+    ###########################################################################
+    # Field sets for detail views
+    ###########################################################################
+    # By default, only ID, name, and region are available
+    base_fields = ('id', 'name', 'region')
+    # Admins can see everything, but we'll enumerate the fields
+    # explicitly
+    admin_fields = base_fields + (
+        'creation_date',
+        'foundation_date',
+        'last_modified',
+        'users',
+    )
+    # DOs can see extra information about their own clubs
+    do_fields = base_fields + (
+        'foundation_date',
+        'users',
+    )
+
     # Permissions for viewing clubs.
     # 1. User must be authenticated.
-    # 2. User must be an admin, or an RDO, or a club DO.
-    # 3. Only admins can perform unsafe (CUD) operations
+    # 2. Only admins can perform unsafe (CUD) operations
     permission_classes = [
         # 1. User must be authenticated
         IsAuthenticated,
-        # User must be admin / RDO / DO
-        (C(IsAdminUser) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
-        # Only admins may perform unsafe operations
+        # 2. Only admins may perform unsafe operations
         (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
+    permission_classes_by_action = {
+        # We don't allow regular users to list all clubs
+        'list': [C(IsAdminUser) | C(IsDiveOfficer)],
+    }
+
+    def get_permissions(self):
+        try:
+            return [IsAuthenticated()] + [permission() for permission in \
+                                          self.permission_classes_by_action[self.action]]
+        except KeyError:
+            return [IsAuthenticated()] + [permission() for permission in \
+                                          self.permission_classes]
+
     queryset = Club.objects.all()
     serializer_class = ClubSerializer
+
+    def retrieve(self, request, pk=None):
+        club = self.get_object()
+        user = request.user
+        # By default, a club detail response will contain only
+        # the club's ID, name, and its region ID
+        fields = self.base_fields
+        # Admins can see everything, however
+        if user.is_staff:
+            fields = self.admin_fields
+        # Let DOs see more detail about their own club
+        if user.is_dive_officer() and user.club == club:
+            fields = self.do_fields
+        serializer = self.serializer_class(club, fields=fields)
+        return Response(serializer.data)
 
     # Given a club ID in the request URL, find all qualifications that
     # have been granted to members of that club
@@ -84,16 +128,16 @@ class RegionViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         # If the user is an admin, then they're fine
-        if user.is_admin():
+        if user.is_staff:
             pass
         # Otherwise, if the user is a committee member and the region
         # matches, then they're fine
         elif user.has_any_role() and user.club.region == region:
             pass
         # Or (least likely) the user is the regional dive officer
-        elif region.dive_officer == user:
+        elif user == region.dive_officer:
             pass
-        # Otherwise, they're forbidden
+        # Otherwise, they're forbidden to access this
         else:
             raise PermissionDenied
 
