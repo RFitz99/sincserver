@@ -58,7 +58,7 @@ class CommitteePosition(models.Model):
     """
 
     def __str__(self):
-        return '{}, {} ({})'.format(self.user, self.role, self.club)
+        return '{}, {} ({})'.format(self.user, self.get_role_display(), self.club)
 
     user = models.ForeignKey('users.User', related_name='committee_positions')
     club = models.ForeignKey('Club')
