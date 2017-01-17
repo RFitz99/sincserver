@@ -38,18 +38,22 @@ class ClubViewSet(viewsets.ModelViewSet):
         'users',
     )
 
-    # Permissions for viewing clubs.
+    # Default permissions for viewing clubs.
     # 1. User must be authenticated.
     # 2. Only admins can perform unsafe (CUD) operations
     permission_classes = [
         # 1. User must be authenticated
         IsAuthenticated,
         # 2. Only admins may perform unsafe operations
-        ((C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSafeMethod)),
+        (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
     permission_classes_by_action = {
-        # We don't allow regular users to list all clubs
+        # Only admins can create new clubs
+        'create': [C(IsAdminUser)],
+        # Only admins can delete clubs
+        'destroy': [C(IsAdminUser)],
+        # Admins and DOs can retrieve club lists
         'list': [C(IsAdminUser) | C(IsDiveOfficer)],
     }
 
@@ -78,6 +82,9 @@ class ClubViewSet(viewsets.ModelViewSet):
             fields = self.do_fields
         serializer = self.serializer_class(club, fields=fields)
         return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        return super(ClubViewSet, self).update(request, *args, **kwargs)
 
     # Given a club ID in the request URL, find all qualifications that
     # have been granted to members of that club
