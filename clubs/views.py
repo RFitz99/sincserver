@@ -55,6 +55,8 @@ class ClubViewSet(viewsets.ModelViewSet):
         'destroy': [C(IsAdminUser)],
         # Admins and DOs can retrieve club lists
         'list': [C(IsAdminUser) | C(IsDiveOfficer)],
+        # Admins and DOs can update
+        'update': [C(IsAdminUser) | C(IsDiveOfficer)],
     }
 
     def get_permissions(self):
