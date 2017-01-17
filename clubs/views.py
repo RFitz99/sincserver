@@ -45,7 +45,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         # 1. User must be authenticated
         IsAuthenticated,
         # 2. Only admins may perform unsafe operations
-        (C(IsAdminUser) | C(IsSafeMethod)),
+        ((C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSafeMethod)),
     ]
 
     permission_classes_by_action = {
