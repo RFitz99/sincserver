@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer 
 
 from clubs.models import Club, CommitteePosition, Region
+from serializers import DynamicFieldsModelSerializer
 from users.models import User
 
 class RegionSerializer(ModelSerializer):
@@ -9,7 +10,7 @@ class RegionSerializer(ModelSerializer):
         fields = ('name', 'id',)
 
 
-class ClubSerializer(ModelSerializer):
+class ClubSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = Club
         # This is the largest possible set of fields that we
@@ -27,14 +28,6 @@ class ClubSerializer(ModelSerializer):
 
     users = ClubMemberSerializer(many=True, read_only=True)
 
-    def __init__(self, *args, **kwargs):
-        specified_fields = kwargs.pop('fields', None)
-        super(ClubSerializer, self).__init__(*args, **kwargs)
-        if specified_fields is not None:
-            specified_fields = set(specified_fields)
-            available_fields = set(self.fields.keys())
-            for field_name in available_fields - specified_fields:
-                self.fields.pop(field_name)
 
 class CommitteePositionSerializer(ModelSerializer):
     class Meta:
