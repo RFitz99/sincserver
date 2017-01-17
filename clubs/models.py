@@ -31,6 +31,14 @@ class Club(models.Model):
     # to the system
     foundation_date = models.DateField(blank=True, null=True)
 
+
+    ############################################################################
+    # Authority checking --- is this club DO'd by a user
+    ############################################################################
+
+    def has_as_dive_officer(self, user):
+        return user.club == self and user.is_dive_officer()
+
     ############################################################################
     # Internal use only
     ############################################################################
