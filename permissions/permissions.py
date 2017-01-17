@@ -31,7 +31,6 @@ class IsDiveOfficer(permissions.BasePermission):
             return obj.has_as_dive_officer(request.user)
         except AttributeError:
             return False
-        #return request.user.is_dive_officer() and request.user.club == obj.club
 
 
 
