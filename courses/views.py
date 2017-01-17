@@ -8,10 +8,20 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 
+    ###########################################################################
+    # TODO (17/01/2017):
+    # Most of the tests are failing because access controls to courses
+    # are excessively permissive. We need to work out what combination of
+    # permissions to apply to each action (create, update, etc.) in order
+    # to confirm the assumptions being made in the tests.
+    ###########################################################################
+    # permission_classes = (,)
+
     def perform_create(self, serializer):
+        # When a non-admin creates a course, we'll set them as the
+        # creator and the organizer by default.
         creator = self.request.user
         organizer = self.request.user
-        club = self.request.user.club
         region = self.request.user.club.region
         # Allow staff members to set these fields explicitly
         if self.request.user.is_staff and ('organizer' in self.request.data):
