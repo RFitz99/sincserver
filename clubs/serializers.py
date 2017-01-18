@@ -16,8 +16,21 @@ class ClubSerializer(DynamicFieldsModelSerializer):
         # This is the largest possible set of fields that we
         # can return. The subset of fields to be sent is decided
         # in ClubViewSet.
-        fields = ('name', 'id', 'region', 'users', 'creation_date',
-                  'foundation_date', 'last_modified',)
+        fields = (
+            'contact_email',
+            'contact_name',
+            'contact_phone',
+            'creation_date',
+            'description',
+            'foundation_date',
+            'id',
+            'name',
+            'last_modified',
+            'location',
+            'region',
+            'training_times',
+            'users',
+        )
 
     # A serializer for members that offers a small subset of
     # user attributes
