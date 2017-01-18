@@ -19,20 +19,36 @@ from users.choices import STATUS_CURRENT
 
 class ClubViewSet(viewsets.ModelViewSet):
 
+    queryset = Club.objects.all()
+    serializer_class = ClubSerializer
+
     ###########################################################################
-    # Field sets for detail views
+    # Field sets for detail views --- these tuples 
     ###########################################################################
-    # By default, only ID, name, and region are available
-    base_fields = ('id', 'name', 'region')
+
+    # By default, these fields are made available to any authenticated user.
+    base_fields = (
+        'contact_email',
+        'contact_name',
+        'contact_phone',
+        'description',
+        'id',
+        'location',
+        'name',
+        'region'
+        'training_times',
+    )
+
     # Admins can see everything, but we'll enumerate the fields
-    # explicitly
+    # explicitly, to be on the safe side.
     admin_fields = base_fields + (
         'creation_date',
         'foundation_date',
         'last_modified',
         'users',
     )
-    # DOs can see extra information about their own clubs
+
+    # DOs can see extra information about their own clubs.
     do_fields = base_fields + (
         'foundation_date',
         'users',
@@ -48,6 +64,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
+    # Action-specific permission classes, which override the defaults.
     permission_classes_by_action = {
         # Only admins can create new clubs
         'create': [C(IsAdminUser)],
@@ -59,6 +76,8 @@ class ClubViewSet(viewsets.ModelViewSet):
         'update': [C(IsAdminUser) | C(IsDiveOfficer)],
     }
 
+    # Try to find an action-specific list of permission classes,
+    # falling back to the (tighter) defaults.
     def get_permissions(self):
         try:
             return [IsAuthenticated()] + [permission() for permission in \
@@ -67,11 +86,11 @@ class ClubViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated()] + [permission() for permission in \
                                           self.permission_classes]
 
-    queryset = Club.objects.all()
-    serializer_class = ClubSerializer
-
+    # We override ModelViewSet.retrieve() in order to set the fields.
     def retrieve(self, request, pk=None):
+        # Retrieve the club
         club = self.get_object()
+        # Get the requesting user
         user = request.user
         # By default, a club detail response will contain only
         # the club's ID, name, and its region ID
