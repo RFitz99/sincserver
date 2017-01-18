@@ -35,7 +35,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         'id',
         'location',
         'name',
-        'region'
+        'region',
         'training_times',
     )
 
@@ -101,6 +101,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         # Let DOs see more detail about their own club
         if user.is_dive_officer() and user.club == club:
             fields = self.do_fields
+        print(fields)
         serializer = self.serializer_class(club, fields=fields)
         return Response(serializer.data)
 
