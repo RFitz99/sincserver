@@ -71,7 +71,7 @@ class ClubDetailTestCase(APITestCase):
         returned_fields = [field for field in data]
         for expected_field in expected_fields:
             self.assertIn(expected_field, returned_fields,
-                          'User should see field "{}" when viewing their club')
+                          'User should see field "{}" when viewing their club'.format(expected_field))
 
     def test_member_sees_no_unexpected_fields_for_own_club(self):
         self.client.force_authenticate(self.member)
@@ -81,7 +81,7 @@ class ClubDetailTestCase(APITestCase):
         returned_fields = [field for field in data]
         for returned_field in returned_fields:
             self.assertIn(returned_field, expected_fields,
-                          'User shouldn\'t see field "{}" when viewing their club')
+                          'User shouldn\'t see field "{}" when viewing their club'.format(returned_field))
 
     def test_member_can_view_other_club_detail(self):
         self.client.force_authenticate(self.member)
@@ -96,7 +96,7 @@ class ClubDetailTestCase(APITestCase):
         returned_fields = [field for field in data]
         for expected_field in expected_fields:
             self.assertIn(expected_field, returned_fields,
-                          'User should see field "{}" when viewing another club')
+                          'User should see field "{}" when viewing another club'.format(expected_field))
 
     def test_member_sees_no_unexpected_fields_for_other_club(self):
         self.client.force_authenticate(self.member)
@@ -106,7 +106,7 @@ class ClubDetailTestCase(APITestCase):
         returned_fields = [field for field in data]
         for returned_field in returned_fields:
             self.assertIn(returned_field, expected_fields,
-                          'User shouldn\'t see field "{}" when viewing another club')
+                          'User shouldn\'t see field "{}" when viewing another club'.format(returned_field))
 
     ###########################################################################
     # DOs can see more fields than ordinary members when viewing their

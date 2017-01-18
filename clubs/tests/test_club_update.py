@@ -76,7 +76,7 @@ class ClubUpdateDiveOfficerTestCase(APITestCase):
         )
         self.club_id = Club.objects.get(name='UCC').id
 
-        self.do = User.objects.create_user('Staff', 'Member', club=self.club)
+        self.do = User.objects.create_user('Dive', 'Officer', club=self.club)
         self.do.become_dive_officer()
 
         self.new_name = 'CSAC'
