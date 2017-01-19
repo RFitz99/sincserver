@@ -73,6 +73,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         # Admins and DOs can retrieve club lists
         'list': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Admins and DOs can update
+        'partial_update': [C(IsAdminUser) | C(IsDiveOfficer)],
         'update': [C(IsAdminUser) | C(IsDiveOfficer)],
     }
 
