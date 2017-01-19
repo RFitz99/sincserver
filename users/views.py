@@ -39,8 +39,8 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes_by_action = {
         # Admins and Dive Officers can create users
         'create': [C(IsAdminUser) | C(IsDiveOfficer)],
-        # Admins and DOs can view membership statuses; users can
-        # view their own
+        # Admins can view anyone's membership status; DOs can view their
+        # members'; users can view their own
         'current_membership_status': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
         # Admins can update anyone; DOs can update members of their club;
         # users can update themselves
@@ -56,6 +56,10 @@ class UserViewSet(viewsets.ModelViewSet):
         'retrieve': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Authenticated users can view their own profile
         'me': [IsAuthenticated],
+        # Admins can view all courses organized; DOs can view within
+        # their club; users can view themselves
+        'courses_organized': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
+        'courses_taught': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
     }
 
     # When deciding what list of permissions to check, try first to
