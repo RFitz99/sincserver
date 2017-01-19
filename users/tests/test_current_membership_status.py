@@ -3,14 +3,10 @@ from django.core.urlresolvers import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-<<<<<<< HEAD
-from users.models import User
-=======
 from clubs.models import Club
 from qualifications.models import Certificate, Qualification
 from users.models import User
 from users.tests.shared import MOCK_USER_DATA
->>>>>>> master
 
 class CurrentMembershipStatusTestCase(APITestCase):
 
