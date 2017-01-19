@@ -56,6 +56,10 @@ class UserViewSet(viewsets.ModelViewSet):
         'retrieve': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Authenticated users can view their own profile
         'me': [IsAuthenticated],
+        # Admins can view all courses organized; DOs can view within
+        # their club; users can view themselves
+        'courses_organized': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
+        'courses_taught': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
     }
 
     # When deciding what list of permissions to check, try first to
