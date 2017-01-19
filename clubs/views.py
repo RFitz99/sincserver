@@ -166,7 +166,7 @@ class ClubViewSet(viewsets.ModelViewSet):
         # Get the fields that the user wants to update
         requested_fields = set([k for k in request.data])
         # Find the intersection of the two sets --- these are the ones we'll update
-        fields = allowed_fields.intersection(requested_fields)
+        fields = allowed_fields & requested_fields
         # Invoke our serializer, passing the fields as a keyword argument
         serializer = self.get_serializer(instance, data=request.data, fields=fields, partial=partial)
         serializer.is_valid(raise_exception=True)
