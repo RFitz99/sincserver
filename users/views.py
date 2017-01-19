@@ -45,6 +45,7 @@ class UserViewSet(viewsets.ModelViewSet):
         # Admins can update anyone; DOs can update members of their club;
         # users can update themselves
         'update': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
+        'partial_update': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
         # Only admins can delete users
         'delete': [IsAdminUser],
         # Admins and DOs can list users (but the queryset needs to be
