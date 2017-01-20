@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404, render
 from rest_condition import C
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -154,30 +154,29 @@ class UserViewSet(viewsets.ModelViewSet):
     # Extra routes
     ###########################################################################
 
+    def _courses(self, role):
+        user = self.get_object()
+        kwargs = {role: user}
+        courses = Course.objects.filter(**kwargs)
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
     # Tell us which courses this user has organized.
     @detail_route(methods=['get'], url_path='courses-organized')
     def courses_organized(self, request, pk=None):
         """
         Return the list of courses that this user has organized.
         """
-        user = self.get_object()
-        courses = Course.objects.filter(organizer=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
+        return self._courses('organizer')
 
-
-    # Tell us which courses this user has organized.
+    # Tell us which courses this user is teaching.
     @detail_route(methods=['get'], url_path='courses-taught')
     def courses_taught(self, request, pk=None):
         """
         Return the list of courses on which this user is teaching
         or has taught
         """
-        user = self.get_object()
-        courses = Course.objects.filter(instructors=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
-
+        return self._courses('instructors')
 
     # Return this user's current membership status.
     @detail_route(methods=['get'])
