@@ -24,4 +24,5 @@ OWN_PROFILE = (
   'readable_membership_type',
   'next_of_kin_name', 'next_of_kin_phone',
   'current_membership_status',
+  'title',
 )

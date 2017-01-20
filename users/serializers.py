@@ -11,6 +11,7 @@ class UserSerializer(DynamicFieldsModelSerializer):
         # in our views
         fields = (
             'id', 'first_name', 'last_name', 'gender',
+            'title',
             'readable_committee_positions',
             'readable_membership_type',
             'date_of_birth',
