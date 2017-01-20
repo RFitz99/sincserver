@@ -101,6 +101,10 @@ class UserViewSet(viewsets.ModelViewSet):
     # position, they are allowed (at most) to view a list of members
     # of their own club; otherwise they are allowed to view a list
     # containing exactly one User: themselves.
+    #
+    # The benefit of this approach is that it protects us from having
+    # to ensure that unpermitted access returns 403s. Any requests for
+    # resources outside this queryset will just receive a 404.
     def get_queryset(self):
         # Find the user making the request
         user = self.request.user
@@ -169,7 +173,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         return self._courses('organizer')
 
-    # Tell us which courses this user is teaching.
+    # Tell us which courses this user is teaching (or has taught).
     @detail_route(methods=['get'], url_path='courses-taught')
     def courses_taught(self, request, pk=None):
         """
