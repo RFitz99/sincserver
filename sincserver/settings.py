@@ -31,8 +31,13 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # If DEBUG is set to True in .env, then set it to True here, otherwise
 # False
 DEBUG = (os.environ.get('DEBUG', 'False') == 'True')
+print("I'm setting DEBUG to {}".format(DEBUG))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['sincserver.herokuapp.com']
+# Explicitly set ALLOWED_HOSTS to DEBUG defaults; see
+# https://docs.djangoproject.com/en/1.10/ref/settings/#allowed-hosts
+if DEBUG:
+    ALLOWED_HOSTS += ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition
@@ -94,14 +99,6 @@ WSGI_APPLICATION = 'sincserver.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config()
 }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators
