@@ -61,7 +61,8 @@ class ClubUpdateStaffTestCase(APITestCase):
 
     def test_staff_update_changes_club_region(self):
         club = Club.objects.get(id=self.club_id)
-        self.assertEqual(club.region, self.new_region)
+        self.assertEqual(club.region, self.new_region,
+                        'Admin should be able to change club region')
 
 
 class ClubUpdateDiveOfficerTestCase(APITestCase):
