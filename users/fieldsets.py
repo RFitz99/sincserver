@@ -16,13 +16,14 @@ MEMBERSHIP_STATUS = (
     'next_year_membership_status',
 )
 OWN_PROFILE = (
-  'id', 'first_name', 'last_name', 'gender',
-  'date_of_birth',
-  'club',
-  'email', 'phone_home', 'phone_mobile',
-  'readable_committee_positions',
-  'readable_membership_type',
-  'next_of_kin_name', 'next_of_kin_phone',
-  'current_membership_status',
-  'title',
+    'id', 'first_name', 'last_name', 'gender',
+    'is_staff',
+    'date_of_birth',
+    'club',
+    'email', 'phone_home', 'phone_mobile',
+    'readable_committee_positions',
+    'readable_membership_type',
+    'next_of_kin_name', 'next_of_kin_phone',
+    'current_membership_status',
+    'title',
 )
