@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
 from rest_framework.exceptions import PermissionDenied
@@ -149,6 +150,17 @@ class ClubViewSet(viewsets.ModelViewSet):
         queryset = Qualification.objects.filter(user__club=club)
         serializer = QualificationSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        data = self.request.data
+        # Admins can update a club's region
+        if user.is_staff and 'region' in data:
+            region = get_object_or_404(Region, pk=data['region'])
+            serializer.save(region=region)
+            return
+        serializer.save()
+
 
     # The user can update different parts of the Club object based on
     # who they are: admins can change everything; DOs aren't permitted to

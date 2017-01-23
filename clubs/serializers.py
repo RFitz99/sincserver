@@ -40,6 +40,7 @@ class ClubSerializer(DynamicFieldsModelSerializer):
             fields = ('id', 'first_name', 'last_name', 'email',)
 
     users = ClubMemberSerializer(many=True, read_only=True)
+    region = RegionSerializer(read_only=True)
 
 
 class CommitteePositionSerializer(ModelSerializer):
