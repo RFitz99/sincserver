@@ -14,3 +14,8 @@ class QualificationSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'certificate', 'date_granted',)
     user = UserSerializer(fields=['id', 'first_name', 'last_name', 'club',])
     certificate = CertificateSerializer()
+
+class QualificationWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Qualification
+        fields = ('id', 'user', 'certificate', 'date_granted',)
