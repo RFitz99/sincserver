@@ -32,6 +32,16 @@ class QualificationListTestCase(APITestCase):
         response = self.client.get(reverse('qualification-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_user_can_view_their_own_nested_qualifications(self):
+        self.client.force_authenticate(self.member)
+        response = self.client.get(reverse('user-qualification-list', args=[self.member.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_user_cannot_view_another_users_nested_qualifications(self):
+        self.client.force_authenticate(self.member)
+        response = self.client.get(reverse('user-qualification-list', args=[self.other_user.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
     def test_user_sees_their_qualifications(self):
         self.client.force_authenticate(self.member)
         response = self.client.get(reverse('qualification-list'))
@@ -44,7 +54,17 @@ class QualificationListTestCase(APITestCase):
         response = self.client.get(reverse('qualification-list'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_dive_officer_sees_club_qualifications(self):
+    def test_dive_officer_can_list_nested_qualifications_in_same_club(self):
+        self.client.force_authenticate(self.do)
+        response = self.client.get(reverse('user-qualification-list', args=[self.member.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_dive_officer_cannot_list_nested_qualifications_in_other_club(self):
+        self.client.force_authenticate(self.do)
+        response = self.client.get(reverse('user-qualification-list', args=[self.other_user.id]))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_dive_officer_sees_same_club_qualifications(self):
         self.client.force_authenticate(self.do)
         response = self.client.get(reverse('qualification-list'))
         data = response.data
@@ -54,6 +74,11 @@ class QualificationListTestCase(APITestCase):
     def test_admin_can_list_qualifications(self):
         self.client.force_authenticate(self.staff)
         response = self.client.get(reverse('qualification-list'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_admin_can_view_nested_qualifications(self):
+        self.client.force_authenticate(self.staff)
+        response = self.client.get(reverse('user-qualification-list', args=[self.member.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_admin_sees_all_qualifications(self):

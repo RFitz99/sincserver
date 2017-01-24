@@ -1,10 +1,11 @@
-from django.shortcuts import render
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from rest_condition import C
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
-from permissions.permissions import IsAdminUser, IsSafeMethod
+from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSafeMethod, IsUser
 from users.models import User
 from .models import Certificate, Qualification
 from .serializers import QualificationSerializer, QualificationWriteSerializer
@@ -12,7 +13,10 @@ from .serializers import QualificationSerializer, QualificationWriteSerializer
 class QualificationViewSet(viewsets.ModelViewSet):
 
     # Users must be authenticated, and only admins can make changes
-    permission_classes = [C(IsAuthenticated) & (C(IsAdminUser) | C(IsSafeMethod))]
+    permission_classes = [
+        C(IsAuthenticated),
+        (C(IsAdminUser) | C(IsSafeMethod))
+    ]
     queryset = Qualification.objects.all()
     serializer_class = QualificationSerializer
 
@@ -38,16 +42,25 @@ class QualificationViewSet(viewsets.ModelViewSet):
         return queryset.filter(user=user)
 
     def list(self, request, user_pk=None):
-        qualifications = self.queryset
-        if user_pk is not None:
-            qualifications = self.queryset.filter(user=user_pk)
-
-        user = request.user
+        qualifications = self.get_queryset()
+        user = self.request.user
         if not user.is_staff:
             if user.is_dive_officer():
                 qualifications = qualifications.filter(user__club=user.club)
             else:
                 qualifications = qualifications.filter(user=user)
+        if user_pk is not None:
+            # We'll allow a nested list request if the requesting user is
+            # an admin, or if the user is looking for their own qualifications.
+            # TODO: Doing this manually is really brittle. It would be
+            # much better if drf-nested-routers could do this for us. See:
+            # https://github.com/alanjds/drf-nested-routers/issues/73
+            target_user = get_object_or_404(User, pk=user_pk)
+            if user.is_staff or user == target_user or target_user.has_as_dive_officer(user):
+                qualifications = qualifications.filter(user=user_pk)
+            else:
+                raise Http404
+
         qualifications = qualifications.order_by('-date_granted')
         serializer = QualificationSerializer(qualifications, many=True)
         return Response(serializer.data)
