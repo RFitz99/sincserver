@@ -2,6 +2,7 @@
 
 [![Build status](https://travis-ci.org/sdob/sincserver.svg?branch=master)](https://travis-ci.org/sdob/sincserver/branches)
 [![Coverage Status](https://coveralls.io/repos/github/sdob/sincserver/badge.svg?branch=master)](https://coveralls.io/github/sdob/sincserver?branch=master)
+[![Code Climate](https://codeclimate.com/github/sdob/sincserver/badges/gpa.svg)](https://codeclimate.com/github/sdob/sincserver)
 
 SINC backend.
 
