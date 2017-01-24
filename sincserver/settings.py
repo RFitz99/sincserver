@@ -31,7 +31,6 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # If DEBUG is set to True in .env, then set it to True here, otherwise
 # False
 DEBUG = (os.environ.get('DEBUG', 'False') == 'True')
-print("I'm setting DEBUG to {}".format(DEBUG))
 
 ALLOWED_HOSTS = ['sincserver.herokuapp.com']
 # Explicitly set ALLOWED_HOSTS to DEBUG defaults; see
@@ -45,7 +44,6 @@ if DEBUG:
 INSTALLED_APPS = [
     # Default Django installed apps
     'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -59,6 +57,7 @@ INSTALLED_APPS = [
     'courses', # Courses
     'qualifications', # Certificates, etc.
     'users', # Custom user models
+    'django.contrib.auth',
 ]
 
 MIDDLEWARE = [
