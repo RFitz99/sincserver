@@ -38,4 +38,5 @@ class Qualification(models.Model):
     last_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return '{}: {} ({})'.format(self.user, self.certificate, self.date_granted.strftime('%d/%m/%Y'))
+        d = self.date_granted.strftime('%d/%m/%Y') if self.date_granted else 'undated'
+        return '{}: {} ({})'.format(self.user, self.certificate, d)
