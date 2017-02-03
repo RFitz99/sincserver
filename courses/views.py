@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from rest_condition import C
 from rest_framework import viewsets
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
 from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -94,12 +94,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class CourseEnrolmentViewSet(
-    PermissionClassesByActionMixin,
-    CreateModelMixin,
-    DestroyModelMixin,
-    UpdateModelMixin,
-    viewsets.GenericViewSet):
+class CourseEnrolmentViewSet(PermissionClassesByActionMixin, viewsets.ModelViewSet):
 
     queryset = CourseEnrolment.objects.all()
     serializer_class = CourseEnrolmentSerializer
@@ -109,6 +104,15 @@ class CourseEnrolmentViewSet(
         'create': [C(IsAdminUser) | C(IsDiveOfficer) | C(IsSameUser)],
         'destroy': [C(IsAdminUser) | C(IsDiveOfficer) | C(IsUser)],
     }
+
+    def get_queryset(self):
+        queryset = CourseEnrolment.objects.all()
+        user = self.request.user
+        if user.is_staff:
+            return queryset
+        if user.is_dive_officer():
+            return queryset.filter(user__club=user.club)
+        return queryset.filter(user=user)
 
     def create(self, request):
         user = self.request.user
@@ -126,6 +130,16 @@ class CourseEnrolmentViewSet(
         if target_user == user:
             return super(CourseEnrolmentViewSet, self).create(request)
         raise PermissionDenied
+
+    def list(self, request, course_pk=None):
+        # Bare lists are not allowed; clients must make nested requests
+        if course_pk is None:
+            raise MethodNotAllowed(self.action)
+        # Otherwise, filter on the course PK and return the results
+        course = get_object_or_404(Course, pk=course_pk)
+        queryset = self.get_queryset().filter(course=course)
+        serializer = CourseEnrolmentSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class CertificateViewSet(viewsets.ModelViewSet):
