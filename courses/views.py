@@ -1,7 +1,11 @@
+from rest_condition import C
 from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
 
 from courses.models import Certificate, Course, CourseEnrolment
 from courses.serializers import CertificateSerializer, CourseSerializer, CourseEnrolmentSerializer
+from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSafeMethod
+from users.models import User
 
 class CourseViewSet(viewsets.ModelViewSet):
 
@@ -18,7 +22,18 @@ class CourseViewSet(viewsets.ModelViewSet):
     # Check the permissions code for UserViewSet (in users/views.py) for
     # an example of how to do this.
     ###########################################################################
-    # permission_classes = (,)
+    permission_classes = (C(IsAdminUser) | C(IsSafeMethod),)
+
+    permission_classes_by_action = {
+        'create': [C(IsAdminUser) | C(IsDiveOfficer)],
+        'retrieve': [],
+    }
+
+    def get_permissions(self):
+        try:
+            return [IsAuthenticated()] + [permission() for permission in self.permission_classes_by_action[self.action]]
+        except KeyError:
+            return [IsAuthenticated()] + [permission() for permission in self.permission_classes]
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -30,8 +45,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         # If the user is an administrator, they can override the default creator
         if user.is_staff and ('creator' in self.request.data):
-            # TODO: Set the creator
-            pass
+            creator = User.objects.get(pk=self.request.data['creator'])
 
         # If the user is an admin or Dive Officer, they can
         # override the default organizer. An admin can set this to
@@ -40,9 +54,16 @@ class CourseViewSet(viewsets.ModelViewSet):
         #
         # We will set the region to the organizer's region by default,
         # unless the user explicitly sets the region (handled later).
-        if (user.is_staff or user.is_dive_officer()) and ('organizer' in self.request.data):
-            # TODO: Set the organizer and the region.
-            pass
+        if (user.is_staff or user.is_dive_officer()) and 'organizer' in self.request.data:
+            try:
+                proposed_organizer = User.objects.get(pk=self.request.data['organizer'])
+                # Staff members may set any user as organizer; DOs may only set members
+                # of their own club
+                if user.is_staff or proposed_organizer.club == user.club:
+                    organizer = proposed_organizer
+            except User.DoesNotExist:
+                # Fall back to setting the requesting user as the organizer
+                organizer = user
 
         # If the user is an admin, they can override the default region.
         if user.is_staff and ('region' in self.request.data):
