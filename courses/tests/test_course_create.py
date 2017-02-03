@@ -124,7 +124,6 @@ class CourseCreateWithInstructorsTestCase(APITestCase):
             'region': self.region.id,
             'instructors': [i.pk for i in self.instructors],
         }
-        print(data)
         response = self.client.post(reverse('course-list'), data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         course = Course.objects.get(organizer=self.organizer)
