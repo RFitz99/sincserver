@@ -64,3 +64,52 @@ class CourseEnrolmentListTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED,
                          'DOs shouldn\'t be able to list all courseenrolments'
                         )
+
+class NestedCourseEnrolmentList(APITestCase):
+    def setUp(self):
+        # Create a certificate for a course
+        certificate = Certificate.objects.create(name='Trainee Diver')
+        # Create an admin
+        self.admin = User.objects.create_user('Staff', 'Member', is_staff=True)
+        # Create course creator and organizer
+        self.club = Club.objects.create(name='UCCSAC')
+        self.creator = User.objects.create_user('Course', 'Creator', club=self.club)
+        self.organizer = User.objects.create_user('Course', 'Organizer', club=self.club)
+        # Create a course
+        self.course = Course.objects.create(
+            certificate=certificate,
+            creator=self.creator,
+            organizer=self.organizer
+        )
+        # Create a user who will try to join/leave courses
+        self.user = User.objects.create_user('Normal', 'User', club=self.club)
+        # Create a DO who will have list privs
+        self.do = User.objects.create_user('Dive', 'Officer', club=self.club)
+        self.do.become_dive_officer()
+        # Create a user from a different club
+        self.other_user = User.objects.create_user('Other', 'User')
+        # Create some enrolments
+        CourseEnrolment.objects.create(course=self.course, user=self.user)
+        CourseEnrolment.objects.create(course=self.course, user=self.other_user)
+
+    def test_admins_can_list_all_course_enrolments(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(reverse('course-enrolment-list', args=[self.course.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_dos_can_list_enrolments_from_their_club(self):
+        self.client.force_authenticate(self.do)
+        response = self.client.get(reverse('course-enrolment-list', args=[self.course.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_unauthenticated_users_cannot_list_enrolments(self):
+        response = self.client.get(reverse('course-enrolment-list', args=[self.course.id]))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_users_can_list_their_own_enrolments(self):
+        self.client.force_authenticate(self.user)
+        response = self.client.get(reverse('course-enrolment-list', args=[self.course.id]))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
