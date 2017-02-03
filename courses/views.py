@@ -6,7 +6,7 @@ from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveM
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from courses.models import Certificate, Course, CourseEnrolment
+from courses.models import Certificate, Course, CourseEnrolment, CourseInstruction
 from courses.serializers import CertificateSerializer, CourseSerializer, CourseEnrolmentSerializer
 from mixins import PermissionClassesByActionMixin
 from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSafeMethod, IsSameUser, IsUser
@@ -87,6 +87,18 @@ class CourseViewSet(viewsets.ModelViewSet):
             organizer=organizer,
             region=region,
         )
+
+        # Add instructors, if specified. (This is only allowed when
+        # the course is being created; otherwise it needs to be
+        # performed through the CourseInstruction nested route.)
+        # TODO: This may require us to lock the user table as well,
+        # in which case we'll need to enforce atomicity.
+        instructors = []
+        if 'instructors' in self.request.data:
+            instructors = User.objects.filter(id__in=self.request.data['instructors'])
+        for instructor in instructors:
+            CourseInstruction.objects.create(course=instance, user=instructor)
+
 
     def list(self, request, region_pk=None):
         # If the request contains a region ID, then filter the

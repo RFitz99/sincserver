@@ -102,3 +102,30 @@ class CourseCreateTestCase(APITestCase):
         response = self.client.post(reverse('course-list'), data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
                         'Regular user should not be able to create course')
+
+
+class CourseCreateWithInstructorsTestCase(APITestCase):
+    def setUp(self):
+        self.club = Club.objects.create(name='National', region=Region.objects.create(name='National'))
+        self.admin = User.objects.create_user('Staff', 'Member', is_staff=True, club=self.club)
+        self.organizer = User.objects.create_user('Course', 'Organizer')
+        self.instructors = [
+            User.objects.create_user('First', 'Instructor'),
+            User.objects.create_user('Second', 'Instructor')
+        ]
+        self.region = Region.objects.create(name='North')
+        self.certificate = Certificate.objects.create(name='Trainee Diver')
+
+    def test_admin_can_create_course_with_defined_instructors(self):
+        self.client.force_authenticate(self.admin)
+        data = {
+            'certificate': self.certificate.id,
+            'organizer': self.organizer.id,
+            'region': self.region.id,
+            'instructors': [i.pk for i in self.instructors],
+        }
+        print(data)
+        response = self.client.post(reverse('course-list'), data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        course = Course.objects.get(organizer=self.organizer)
+        self.assertEqual(len(course.instructors.all()), 2)
