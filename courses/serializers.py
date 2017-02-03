@@ -28,5 +28,5 @@ class CourseSerializer(ModelSerializer):
     # Course creator and course organizer are handled in the view
     # (they are set to the requesting user unless that user is an
     # admin), so we set them as read_only here.
-    creator = UserSerializer(fields=('id', 'first_name', 'last_name',), read_only=True)
+    creator = UserSerializer(fields=('id', 'first_name', 'last_name', 'email',), read_only=True)
     organizer = UserSerializer(fields=('id', 'first_name', 'last_name', 'email',), read_only=True)
