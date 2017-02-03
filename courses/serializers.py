@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ListSerializer, ModelSerializer
 
 from clubs.serializers import RegionSerializer
 from courses.models import Certificate, Course, CourseEnrolment
@@ -23,7 +23,6 @@ class CourseSerializer(ModelSerializer):
             'id',
             'organizer',
             'region',
-            'courseenrolments',
         )
     # Course creator and course organizer are handled in the view
     # (they are set to the requesting user unless that user is an
