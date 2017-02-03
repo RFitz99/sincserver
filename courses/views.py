@@ -1,10 +1,15 @@
+from django.shortcuts import get_object_or_404
 from rest_condition import C
 from rest_framework import viewsets
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.mixins import CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 from courses.models import Certificate, Course, CourseEnrolment
 from courses.serializers import CertificateSerializer, CourseSerializer, CourseEnrolmentSerializer
-from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSafeMethod
+from mixins import PermissionClassesByActionMixin
+from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSafeMethod, IsSameUser, IsUser
 from users.models import User
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -31,9 +36,11 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         try:
-            return [IsAuthenticated()] + [permission() for permission in self.permission_classes_by_action[self.action]]
+            return ([IsAuthenticated()]
+                    + [permission() for permission in self.permission_classes_by_action[self.action]])
         except KeyError:
-            return [IsAuthenticated()] + [permission() for permission in self.permission_classes]
+            return ([IsAuthenticated()]
+                    + [permission() for permission in self.permission_classes])
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -78,19 +85,48 @@ class CourseViewSet(viewsets.ModelViewSet):
         )
 
     def list(self, request, region_pk=None):
-        # TODO: If the request contains a region ID, then filter the
+        # If the request contains a region ID, then filter the
         # queryset to return only courses from that region.
-        # Check the README for drf-nested-routers for an example of
-        # how to do this:
-        # https://github.com/alanjds/drf-nested-routers
-        return super(CourseViewSet, self).list(request)
+        queryset = Course.objects.all()
+        if region_pk is not None:
+            queryset = queryset.filter(region=region_pk)
+        serializer = CourseSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
-
-class CourseEnrolmentViewSet(viewsets.ModelViewSet):
+class CourseEnrolmentViewSet(
+    PermissionClassesByActionMixin,
+    CreateModelMixin,
+    DestroyModelMixin,
+    UpdateModelMixin,
+    viewsets.GenericViewSet):
 
     queryset = CourseEnrolment.objects.all()
     serializer_class = CourseEnrolmentSerializer
+
+    permission_classes = [C(IsAuthenticated),]
+    permission_classes_by_action = {
+        'create': [C(IsAdminUser) | C(IsDiveOfficer) | C(IsSameUser)],
+        'destroy': [C(IsAdminUser) | C(IsDiveOfficer) | C(IsUser)],
+    }
+
+    def create(self, request):
+        user = self.request.user
+        data = request.data
+        # Admins can create an enrolment for any user
+        if user.is_staff:
+            return super(CourseEnrolmentViewSet, self).create(request)
+        # DOs can create an enrolment for members of their club
+        if user.is_dive_officer():
+            queryset = User.objects.filter(club=user.club)
+            target_user = get_object_or_404(queryset, pk=request.data['user'])
+            return super(CourseEnrolmentViewSet, self).create(request)
+        # Users can create an enrolment for themselves
+        target_user = get_object_or_404(User, pk=request.data['user'])
+        if target_user == user:
+            return super(CourseEnrolmentViewSet, self).create(request)
+        raise PermissionDenied
+
 
 class CertificateViewSet(viewsets.ModelViewSet):
 
