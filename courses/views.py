@@ -77,8 +77,12 @@ class CourseViewSet(viewsets.ModelViewSet):
             # TODO: Implement this!
             pass
 
+        # Find the certificate by its ID
+        certificate = get_object_or_404(Certificate, pk=self.request.data['certificate'])
+
         # Save the instance
         instance = serializer.save(
+            certificate=certificate,
             creator=creator,
             organizer=organizer,
             region=region,
