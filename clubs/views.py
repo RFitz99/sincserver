@@ -1,7 +1,8 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
 from rest_condition import C, ConditionalPermission
@@ -19,21 +20,117 @@ from users.choices import STATUS_CURRENT
 
 class ClubViewSet(viewsets.ModelViewSet):
 
-    # Permissions for viewing clubs.
+    queryset = Club.objects.all()
+    serializer_class = ClubSerializer
+
+    ###########################################################################
+    # Field sets for detail views --- these tuples 
+    ###########################################################################
+
+    # By default, these fields are made available to any authenticated user.
+    base_fields = (
+        'contact_email',
+        'contact_name',
+        'contact_phone',
+        'description',
+        'id',
+        'location',
+        'name',
+        'region',
+        'training_times',
+    )
+
+    # Admins can see everything, but we'll enumerate the fields
+    # explicitly, to be on the safe side.
+    admin_fields = base_fields + (
+        'creation_date',
+        'foundation_date',
+        'last_modified',
+        'users',
+    )
+
+    # DOs can see extra information about their own clubs.
+    do_fields = base_fields + (
+        'foundation_date',
+        'users',
+    )
+
+    # Default permissions for viewing clubs.
     # 1. User must be authenticated.
-    # 2. User must be an admin, or an RDO, or a club DO.
-    # 3. Only admins can perform unsafe (CUD) operations
+    # 2. Only admins can perform unsafe (CUD) operations
     permission_classes = [
         # 1. User must be authenticated
         IsAuthenticated,
-        # User must be admin / RDO / DO
-        (C(IsAdminUser) | C(IsRegionalDiveOfficer) | C(IsDiveOfficer)),
-        # Only admins may perform unsafe operations
+        # 2. Only admins may perform unsafe operations
         (C(IsAdminUser) | C(IsSafeMethod)),
     ]
 
-    queryset = Club.objects.all()
-    serializer_class = ClubSerializer
+    # Action-specific permission classes, which override the defaults.
+    permission_classes_by_action = {
+        # Only admins can create new clubs
+        'create': [C(IsAdminUser)],
+        # Only admins can delete clubs
+        'destroy': [C(IsAdminUser)],
+        # Admins and DOs can retrieve club lists
+        'list': [C(IsAdminUser) | C(IsDiveOfficer)],
+        # Admins and DOs can update
+        'partial_update': [C(IsAdminUser) | C(IsDiveOfficer)],
+        'update': [C(IsAdminUser) | C(IsDiveOfficer)],
+    }
+
+    def get_allowed_fields(self, user, club):
+        if self.action in SAFE_METHODS:
+            # By default, the allowed fields
+            # the club's ID, name, and its region ID
+            fields = self.base_fields
+            # Admins can see everything, however
+            if user.is_staff:
+                fields = self.admin_fields
+            # Let DOs see more detail about their own club
+            if user.is_dive_officer() and user.club == club:
+                fields = self.do_fields
+            return fields
+        # For *unsafe* methods, we are a little stricter: DOs may
+        # not change their club's name or region. Only admins
+        # can do that.
+        if user.is_staff:
+            return self.admin_fields
+        if club.has_as_dive_officer(user):
+            # Remove name and region from allowed fields
+            return tuple(set(self.do_fields) - set(['name', 'region']))
+
+        # We shouldn't be here. A non-admin, non-DO user has no rights
+        # to change any aspect of their club (and they should have been
+        # caught during the permissions check), so just raise PermissionDenied
+        raise PermissionDenied
+
+    # Try to find an action-specific list of permission classes,
+    # falling back to the (tighter) defaults.
+    def get_permissions(self):
+        try:
+            return [IsAuthenticated()] + [permission() for permission in \
+                                          self.permission_classes_by_action[self.action]]
+        except KeyError:
+            return [IsAuthenticated()] + [permission() for permission in \
+                                          self.permission_classes]
+
+    # We override ModelViewSet.retrieve() in order to set the fields.
+    def retrieve(self, request, pk=None):
+        # Retrieve the club
+        club = self.get_object()
+        # Get the requesting user
+        user = request.user
+        # By default, a club detail response will contain only
+        # the club's ID, name, and its region ID
+        fields = self.base_fields
+        # Admins can see everything, however
+        if user.is_staff:
+            fields = self.admin_fields
+        # Let DOs see more detail about their own club
+        if user.is_dive_officer() and user.club == club:
+            fields = self.do_fields
+        serializer = self.serializer_class(club, fields=fields)
+        return Response(serializer.data)
 
     # Given a club ID in the request URL, find all qualifications that
     # have been granted to members of that club
@@ -52,6 +149,50 @@ class ClubViewSet(viewsets.ModelViewSet):
         # Otherwise, proceed
         queryset = Qualification.objects.filter(user__club=club)
         serializer = QualificationSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        data = self.request.data
+        # Admins can update a club's region
+        if user.is_staff and 'region' in data:
+            region = get_object_or_404(Region, pk=data['region'])
+            serializer.save(region=region)
+            return
+        serializer.save()
+
+
+    # The user can update different parts of the Club object based on
+    # who they are: admins can change everything; DOs aren't permitted to
+    # change the club's name or region; and so on. When we're performing
+    # an update, we check the fields in the incoming request, compare them
+    # with the fields that the user is allowed to update, and tell the
+    # serializer to handle only the fields that are in both sets.
+    #
+    # Apart from that, the code is simply copied from
+    # rest_framework.generics.UpdateModelMixin.
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        # Get the fields that the user is allowed to update
+        allowed_fields = set(self.get_allowed_fields(request.user, instance))
+        # Get the fields that the user wants to update
+        requested_fields = set([k for k in request.data])
+        # Find the intersection of the two sets --- these are the ones we'll update
+        fields = allowed_fields & requested_fields
+        # Invoke our serializer, passing the fields as a keyword argument
+        serializer = self.get_serializer(instance, data=request.data, fields=fields, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # refresh the instance from the database.
+            instance = self.get_object()
+            # Again, pass in the 'fields' kwarg to ensure we don't accidentally
+            # expose sensitive information
+            serializer = self.get_serializer(instance, fields=fields)
+
         return Response(serializer.data)
 
 
@@ -84,16 +225,16 @@ class RegionViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         # If the user is an admin, then they're fine
-        if user.is_admin():
+        if user.is_staff:
             pass
         # Otherwise, if the user is a committee member and the region
         # matches, then they're fine
         elif user.has_any_role() and user.club.region == region:
             pass
         # Or (least likely) the user is the regional dive officer
-        elif region.dive_officer == user:
+        elif user == region.dive_officer:
             pass
-        # Otherwise, they're forbidden
+        # Otherwise, they're forbidden to access this
         else:
             raise PermissionDenied
 

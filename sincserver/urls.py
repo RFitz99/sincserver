@@ -14,6 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url, include
+from django.contrib import admin
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework_nested import routers as nested_routers
@@ -23,9 +24,12 @@ from clubs.views import ClubViewSet, RegionViewSet
 from courses.views import CertificateViewSet, CourseViewSet, CourseEnrolmentViewSet
 from users.views import UserViewSet
 
+admin.autodiscover()
+
 router = routers.DefaultRouter()
 router.register(r'users', UserViewSet, base_name='user')
 router.register(r'certificates', CertificateViewSet, base_name='certificate')
+router.register(r'qualifications', QualificationViewSet, base_name='qualification')
 router.register(r'clubs', ClubViewSet, base_name='club')
 router.register(r'courses', CourseViewSet, base_name='course')
 router.register(r'regions', RegionViewSet, base_name='region')
@@ -42,6 +46,7 @@ regions_router = nested_routers.NestedSimpleRouter(router, r'regions', lookup='r
 regions_router.register(r'courses', CourseViewSet, base_name='region-course')
 
 urlpatterns = [
+    url(r'^admin/', admin.site.urls),
     #url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^auth/login/', obtain_auth_token), # Respond to username/password pairs with auth tokens
     url(r'^', include(router.urls)), # All other URLs are passed to the default router

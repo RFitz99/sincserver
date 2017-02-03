@@ -318,6 +318,16 @@ class User(AbstractUser):
 
 
     ############################################################################
+    # Authority checking --- is this user under the authority of another?
+    ############################################################################
+
+    def has_as_dive_officer(self, other_user):
+        # True if both users are in the same club and the other user is
+        # the Dive Officer, otherwise False
+        return self.club == other_user.club and other_user.is_dive_officer()
+
+
+    ############################################################################
     # Implementation details (basically boilerplate stuff required by Django)
     ############################################################################
 

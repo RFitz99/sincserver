@@ -21,7 +21,16 @@ class IsDiveOfficer(permissions.BasePermission):
         return request.user.is_dive_officer()
     
     def has_object_permission(self, request, view, obj):
-        return request.user.is_dive_officer() and request.user.club == obj.club
+        # Try to check whether the object in question is under
+        # the purview of the requesting user. This is
+        # only relevant to certain model types (specifically
+        # Clubs and Users), and will raise an AttributeError
+        # on objects that don't have the method defined, but
+        # that's OK: in that case, we just return False.
+        try:
+            return obj.has_as_dive_officer(request.user)
+        except AttributeError:
+            return False
 
 
 
@@ -29,6 +38,10 @@ class IsSameUser(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return request.user == obj
 
+
+class IsUser(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj.user
 
 
 class IsRegionalDiveOfficer(permissions.BasePermission):

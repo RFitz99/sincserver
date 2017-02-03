@@ -32,7 +32,11 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # False
 DEBUG = (os.environ.get('DEBUG', 'False') == 'True')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['sincserver.herokuapp.com']
+# Explicitly set ALLOWED_HOSTS to DEBUG defaults; see
+# https://docs.djangoproject.com/en/1.10/ref/settings/#allowed-hosts
+if DEBUG:
+    ALLOWED_HOSTS += ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition
@@ -40,7 +44,6 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     # Default Django installed apps
     'django.contrib.admin',
-    'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
@@ -54,6 +57,7 @@ INSTALLED_APPS = [
     'courses', # Courses
     'qualifications', # Certificates, etc.
     'users', # Custom user models
+    'django.contrib.auth',
 ]
 
 MIDDLEWARE = [
@@ -94,14 +98,6 @@ WSGI_APPLICATION = 'sincserver.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config()
 }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.10/ref/settings/#auth-password-validators

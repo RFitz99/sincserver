@@ -1,8 +1,9 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from rest_condition import C
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -101,6 +102,10 @@ class UserViewSet(viewsets.ModelViewSet):
     # position, they are allowed (at most) to view a list of members
     # of their own club; otherwise they are allowed to view a list
     # containing exactly one User: themselves.
+    #
+    # The benefit of this approach is that it protects us from having
+    # to ensure that unpermitted access returns 403s. Any requests for
+    # resources outside this queryset will just receive a 404.
     def get_queryset(self):
         # Find the user making the request
         user = self.request.user
@@ -143,6 +148,22 @@ class UserViewSet(viewsets.ModelViewSet):
         if club_pk is not None:
             queryset = queryset.filter(club__id=club_pk)
 
+        # Look at the request params. If they contain something useful,
+        # then add it to the filter.
+        params = request.query_params
+        # The user can search for users by a substring that will be
+        # compared case-insensitively to both the last and first
+        # names in the database. We'll also do a preliminary check
+        # to see whether it's numeric, in which case it could be a
+        # CFT number.
+        if 'name' in params:
+            fragment = params['name']
+            if fragment.isdigit():
+                q = Q(username__icontains=fragment)
+            else:
+                q = Q(first_name__icontains=fragment) | Q(last_name__icontains=fragment)
+            queryset = queryset.filter(q)
+
         # Serialize the queryset to JSON.
         serializer = self.serializer_class(queryset, many=True)
 
@@ -154,30 +175,29 @@ class UserViewSet(viewsets.ModelViewSet):
     # Extra routes
     ###########################################################################
 
+    def _courses(self, role):
+        user = self.get_object()
+        kwargs = {role: user}
+        courses = Course.objects.filter(**kwargs)
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
     # Tell us which courses this user has organized.
     @detail_route(methods=['get'], url_path='courses-organized')
     def courses_organized(self, request, pk=None):
         """
         Return the list of courses that this user has organized.
         """
-        user = self.get_object()
-        courses = Course.objects.filter(organizer=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
+        return self._courses('organizer')
 
-
-    # Tell us which courses this user has organized.
+    # Tell us which courses this user is teaching (or has taught).
     @detail_route(methods=['get'], url_path='courses-taught')
     def courses_taught(self, request, pk=None):
         """
         Return the list of courses on which this user is teaching
         or has taught
         """
-        user = self.get_object()
-        courses = Course.objects.filter(instructors=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
-
+        return self._courses('instructors')
 
     # Return this user's current membership status.
     @detail_route(methods=['get'])
