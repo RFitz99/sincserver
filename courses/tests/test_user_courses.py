@@ -51,7 +51,7 @@ class CoursesOrganizedTestCase(APITestCase):
         do.become_dive_officer()
         self.client.force_authenticate(do)
         response = self.client.get(reverse('user-courses-organized-list', args=[self.user.id]))
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
                         'DO should not be able to view courses a non-member organized')
 
     def test_user_can_view_courses_they_have_organized(self):
@@ -63,7 +63,7 @@ class CoursesOrganizedTestCase(APITestCase):
     def test_user_cannot_view_courses_another_user_has_organized(self):
         self.client.force_authenticate(User.objects.create_user('Another', 'User'))
         response = self.client.get(reverse('user-courses-organized-list', args=[self.user.id]))
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
                         'User shouldn\'t be able to view courses another user organized')
 
     def test_unauthenticated_user_cannot_view_courses_a_user_has_organized(self):

@@ -31,7 +31,7 @@ class CourseEnrolmentCreationCase(APITestCase):
         self.do = User.objects.create_user('Dive', 'Officer', club=self.club)
         self.do.become_dive_officer()
         # Create a user from a different club
-        self.other_user = User.objects.create_user('Other', 'User', club=self.club)
+        self.other_user = User.objects.create_user('Other', 'User')
 
     ###########################################################################
     # Unauthenticated users can't enrol users
@@ -81,7 +81,7 @@ class CourseEnrolmentCreationCase(APITestCase):
         self.client.force_authenticate(self.do)
         post_data = {'user': self.other_user.id, 'course': self.course.id}
         response = self.client.post(reverse('courseenrolment-list'), post_data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
                          'DOs should not be able to enrol other clubs\' members on courses'
                         )
 
