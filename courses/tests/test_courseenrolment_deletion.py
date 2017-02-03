@@ -47,7 +47,7 @@ class CourseEnrolmentDeletionTestCase(APITestCase):
         self.client.force_authenticate(self.user)
         other_enrolment = CourseEnrolment.objects.create(user=self.other_user, course=self.course)
         response = self.client.delete(reverse('courseenrolment-detail', args=[other_enrolment.id]))
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
                          'Users should not be able to remove other users from courses'
                         )
     
@@ -62,7 +62,7 @@ class CourseEnrolmentDeletionTestCase(APITestCase):
         self.client.force_authenticate(self.do)
         other_enrolment = CourseEnrolment.objects.create(user=self.other_user, course=self.course)
         response = self.client.delete(reverse('courseenrolment-detail', args=[other_enrolment.id]))
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN,
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND,
                          'DOs shouldn\'t be able to withdraw other clubs\' members from courses'
                         )
 
