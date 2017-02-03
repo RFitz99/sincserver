@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from rest_condition import C
 from rest_framework import viewsets
@@ -146,6 +147,22 @@ class UserViewSet(viewsets.ModelViewSet):
         # (e.g., an admin has made the request), then filter further.
         if club_pk is not None:
             queryset = queryset.filter(club__id=club_pk)
+
+        # Look at the request params. If they contain something useful,
+        # then add it to the filter.
+        params = request.query_params
+        # The user can search for users by a substring that will be
+        # compared case-insensitively to both the last and first
+        # names in the database. We'll also do a preliminary check
+        # to see whether it's numeric, in which case it could be a
+        # CFT number.
+        if 'name' in params:
+            fragment = params['name']
+            if fragment.isdigit():
+                q = Q(username__icontains=fragment)
+            else:
+                q = Q(first_name__icontains=fragment) | Q(last_name__icontains=fragment)
+            queryset = queryset.filter(q)
 
         # Serialize the queryset to JSON.
         serializer = self.serializer_class(queryset, many=True)
