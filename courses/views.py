@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from courses.models import Certificate, Course, CourseEnrolment, CourseInstruction
-from courses.serializers import CertificateSerializer, CourseSerializer, CourseEnrolmentSerializer
+from courses.serializers import CertificateSerializer, CourseSerializer, CourseEnrolmentSerializer, CourseInstructionSerializer
 from mixins import PermissionClassesByActionMixin
 from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSafeMethod, IsSameUser, IsUser
 from users.models import User
@@ -17,21 +17,10 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
 
-    ###########################################################################
-    # TODO (17/01/2017):
-    # Most of the tests are failing because access controls to courses
-    # are excessively permissive. We need to work out what combination of
-    # permissions to apply to each action (create, update, etc.) in order
-    # to confirm the assumptions being made in the tests.
-    #
-    # Check the permissions code for UserViewSet (in users/views.py) for
-    # an example of how to do this.
-    ###########################################################################
     permission_classes = (C(IsAdminUser) | C(IsSafeMethod),)
 
     permission_classes_by_action = {
         'create': [C(IsAdminUser) | C(IsDiveOfficer)],
-        'retrieve': [],
     }
 
     def get_permissions(self):
@@ -156,6 +145,24 @@ class CourseEnrolmentViewSet(PermissionClassesByActionMixin, viewsets.ModelViewS
         queryset = self.get_queryset().filter(course=course)
         serializer = CourseEnrolmentSerializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class CourseInstructionViewSet(PermissionClassesByActionMixin, viewsets.ModelViewSet):
+
+    queryset = CourseInstruction.objects.all()
+    serializer_class = CourseInstructionSerializer
+
+    def get_queryset(self):
+        queryset = CourseInstruction.objects.all()
+        user = self.request.user
+        if user.is_staff:
+            return queryset
+        if user.is_dive_officer():
+            return queryset.filter(user__club=user.club)
+        return queryset.filter(user=user)
+
+    permission_classes_by_action = {
+    }
 
 
 class CertificateViewSet(viewsets.ModelViewSet):
