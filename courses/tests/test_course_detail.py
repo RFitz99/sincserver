@@ -27,9 +27,11 @@ class CourseDetailTestCase(APITestCase):
         CourseEnrolment.objects.create(user=self.member, course=self.course)
 
     ###########################################################################
-    # The details of a course will contain
+    # The detail view of a course will contain
     # * its creator
-    # * a list of enrolments
+    # 
+    # It will not contain
+    # * its enrolments; these must be retrieved with a separate API call.
     #
     # For these tests, we're authenticating as the administrator, to
     # evaluate the maximum level of detail available. Other users may
@@ -58,14 +60,14 @@ class CourseDetailTestCase(APITestCase):
         for field in set(keys) - set(expected_fields):
             self.fail('Course detail should not return creator field: "{}"'.format(field))
 
-    def test_course_detail_contains_enrolment_list(self):
+    def test_course_detail_does_not_contain_enrolment_list(self):
         admin = User.objects.create_user('Staff', 'Member', is_staff=True)
         self.client.force_authenticate(admin)
         response = self.client.get(reverse('course-detail', args=[self.course.id]))
         data = response.data
         keys = [k for k in data.keys()]
-        self.assertIn('courseenrolments', keys,
-                      'Course detail should return list of enrolments')
+        self.assertNotIn('courseenrolments', keys,
+                      'Course detail shouldn\'t return list of enrolments')
 
     ###########################################################################
     # Administrators can view the details of a course, including the
@@ -94,8 +96,9 @@ class CourseDetailTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     ###########################################################################
-    # A Dive Officer can view the details of a course, including the
-    # members of their club who are enrolled on it.
+    # A Dive Officer can view the details of a course.
+    # The detail view will not contain members of their club who are
+    # enrolled on it (these are retrieved through a separate view).
     ###########################################################################
 
     def test_dive_officer_can_view_course_detail(self):
@@ -103,22 +106,13 @@ class CourseDetailTestCase(APITestCase):
         response = self.client.get(reverse('course-detail', args=[self.course.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_dive_officer_can_see_list_of_club_members_enrolled(self):
+    def test_dive_officer_cannot_see_list_of_club_members_enrolled(self):
         self.client.force_authenticate(self.do)
         response = self.client.get(reverse('course-detail', args=[self.course.id]))
-        enrolments = response.data['courseenrolments']
-        self.assertEqual(len(enrolments), 1,
-                         'Dive Officer should see club members enrolled on a course')
-
-    def test_dive_officer_cannot_see_other_clubs_members_enrolled(self):
-        csac = Club.objects.create(name='CSAC')
-        other_member = User.objects.create_user('Other', 'Member', club=csac)
-        CourseEnrolment.objects.create(user=other_member, course=self.course)
-        self.client.force_authenticate(self.do)
-        response = self.client.get(reverse('course-detail', args=[self.course.id]))
-        enrolments = response.data['courseenrolments']
-        self.assertEqual(len(enrolments), 1,
-                         'Dive Officer should see only club members enrolled on a course')
+        data = response.data
+        keys = [k for k in data.keys()]
+        self.assertNotIn('courseenrolments', keys,
+                      'Course detail shouldn\'t return list of enrolments')
 
     ###########################################################################
     # A user can view the details of a course, whether or not they are
@@ -132,42 +126,26 @@ class CourseDetailTestCase(APITestCase):
         response = self.client.get(reverse('course-detail', args=[self.course.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_user_can_see_that_they_are_enrolled(self):
-        self.client.force_authenticate(self.member)
-        response = self.client.get(reverse('course-detail', args=[self.course.id]))
-        data = response.data
-        enrolments = data['courseenrolments']
-        # We expect to see a list of 1 enrolment
-        self.assertEqual(len(enrolments), 1)
-
     def test_user_cannot_see_that_other_users_are_enrolled(self):
         other_user = User.objects.create_user('Other', 'User')
         CourseEnrolment.objects.create(user=other_user, course=self.course)
         self.client.force_authenticate(self.member)
         response = self.client.get(reverse('course-detail', args=[self.course.id]))
-        enrolments = response.data['courseenrolments']
-        # We expect to see a list of 1 enrolment
-        failure_message = \
-                'Course detail should provide a list of enrolments containing only the requesting user'
-        self.assertEqual(len(enrolments), 1, failure_message)
+        data = response.data
+        keys = [k for k in data.keys()]
+        self.assertNotIn('courseenrolments', keys,
+                      'Course detail shouldn\'t return list of enrolments')
 
     def test_user_can_view_course_detail_when_not_enrolled(self):
         other_user = User.objects.create_user('Other', 'User')
         self.client.force_authenticate(self.member)
         response = self.client.get(reverse('course-detail', args=[self.course.id]))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # We expect to see an empty list
-        enrolments = response.data['courseenrolments']
-        failure_message = \
-                'Course detail should provide a list of enrolments containing only the requesting user'
-        self.assertEqual(len(enrolments), 1, failure_message)
-
-    def test_user_receives_an_empty_list_of_enrolments_when_not_enrolled(self):
-        other_user = User.objects.create_user('Other', 'User')
-        self.client.force_authenticate(self.member)
-        response = self.client.get(reverse('course-detail', args=[self.course.id]))
-        enrolments = response.data['courseenrolments']
-
+        # We expect not to see a list of enrolments
+        data = response.data
+        keys = [k for k in data.keys()]
+        self.assertNotIn('courseenrolments', keys,
+                      'Course detail shouldn\'t return list of enrolments')
 
     ###########################################################################
     # An unauthenticated user cannot view the details of a course.
