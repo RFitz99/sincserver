@@ -63,6 +63,13 @@ class CourseEnrolment(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
 
+    ############################################################################
+    # Can a DO edit this?
+    ############################################################################
+
+    def has_as_dive_officer(self, possible_dive_officer):
+        return self.user.has_as_dive_officer(possible_dive_officer)
+
 
 class CourseInstruction(models.Model):
     
