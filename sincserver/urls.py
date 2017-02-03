@@ -38,6 +38,9 @@ router.register(r'courseenrolments', CourseEnrolmentViewSet, base_name='courseen
 clubs_router = nested_routers.NestedSimpleRouter(router, r'clubs', lookup='club')
 clubs_router.register(r'users', UserViewSet, base_name='club-users')
 
+courses_router = nested_routers.NestedSimpleRouter(router, r'courses', lookup='course')
+courses_router.register(r'enrolments', CourseEnrolmentViewSet, base_name='course-enrolment')
+
 users_router = nested_routers.NestedSimpleRouter(router, r'users', lookup='user')
 users_router.register(r'qualifications', QualificationViewSet, base_name='user-qualification')
 users_router.register(r'courses-organized', CourseViewSet, base_name='user-courses-organized')
@@ -53,4 +56,5 @@ urlpatterns = [
     url(r'^', include(users_router.urls)),
     url(r'^', include(clubs_router.urls)),
     url(r'^', include(regions_router.urls)),
+    url(r'^', include(courses_router.urls)),
 ]
