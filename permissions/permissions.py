@@ -9,11 +9,28 @@ class IsAdminUser(permissions.IsAdminUser):
         return request.user and request.user.is_staff
 
 
+class IsCreator(permissions.BasePermission):
+    # Check whether this object has a 'creator' attribute,
+    # and if so, whether it's the requesting user; if either
+    # fails, return False
+    def has_object_permission(self, request, view, obj):
+        try:
+            return obj.creator == request.user
+        except AttributeError:
+            return False
+
 
 class IsCommitteeMember(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.has_any_role()
 
+
+class IsCourseOrganizer(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        try:
+            return obj.organizer == request.user
+        except AttributeError:
+            return False
 
 
 class IsDiveOfficer(permissions.BasePermission):
