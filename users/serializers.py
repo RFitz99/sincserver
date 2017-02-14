@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from clubs.serializers import ClubSerializer
+from clubs.models import Club
+from clubs.serializers import ClubSerializer, RegionSerializer
 from users.models import User
 from serializers import DynamicFieldsModelSerializer
 
@@ -34,3 +35,18 @@ class UserSerializer(DynamicFieldsModelSerializer):
     # Let the frontend know if the user is a staff member so that they
     # can view the admin options
     is_staff = serializers.ReadOnlyField()
+
+
+class UserListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id', 'first_name', 'last_name', 'email', 'club',)
+
+    class ClubSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Club
+            fields = ('id', 'name', 'region')
+        region = RegionSerializer()
+
+    club = ClubSerializer()
