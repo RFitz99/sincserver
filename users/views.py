@@ -15,7 +15,7 @@ from courses.serializers import CourseSerializer
 from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSameUser
 from users import fieldsets
 from users.models import User
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, UserListSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
 
@@ -143,10 +143,14 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             queryset = User.objects.filter(club=user.club)
 
+        if region_pk is not None:
+            queryset = queryset.filter(club__region__id=region_pk)
+
         # If we are looking for the users within a specific club
         # (e.g., an admin has made the request), then filter further.
         if club_pk is not None:
             queryset = queryset.filter(club__id=club_pk)
+
 
         # Look at the request params. If they contain something useful,
         # then add it to the filter.
@@ -165,7 +169,7 @@ class UserViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(q)
 
         # Serialize the queryset to JSON.
-        serializer = self.serializer_class(queryset, many=True)
+        serializer = UserListSerializer(queryset, many=True)
 
         # Return a Response.
         return Response(serializer.data)
