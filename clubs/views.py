@@ -114,6 +114,13 @@ class ClubViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated()] + [permission() for permission in \
                                           self.permission_classes]
 
+    def list(self, request, region_pk=None):
+        queryset = self.get_queryset()
+        if region_pk is not None:
+            queryset = queryset.filter(region__pk=region_pk)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
     # We override ModelViewSet.retrieve() in order to set the fields.
     def retrieve(self, request, pk=None):
         # Retrieve the club
@@ -131,6 +138,7 @@ class ClubViewSet(viewsets.ModelViewSet):
             fields = self.do_fields
         serializer = self.serializer_class(club, fields=fields)
         return Response(serializer.data)
+
 
     # Given a club ID in the request URL, find all qualifications that
     # have been granted to members of that club
