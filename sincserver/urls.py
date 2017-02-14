@@ -49,6 +49,8 @@ users_router.register(r'courses-taught', CourseInstructionViewSet, base_name='us
 
 regions_router = nested_routers.NestedSimpleRouter(router, r'regions', lookup='region')
 regions_router.register(r'courses', CourseViewSet, base_name='region-course')
+regions_router.register(r'clubs', ClubViewSet, base_name='region-club')
+regions_router.register(r'users', UserViewSet, base_name='region-user')
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
