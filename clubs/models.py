@@ -3,6 +3,9 @@ from django.db import models
 
 from clubs.roles import ROLE_CHOICES
 
+def get_national_region():
+    return Region.objects.get_or_create(name='National')[0]
+
 # Create your models here.
 class Club(models.Model):
 
@@ -25,7 +28,7 @@ class Club(models.Model):
 
     # The club's region
     region = models.ForeignKey('Region', blank=True, null=True,
-                              on_delete=models.SET_NULL)
+                              on_delete=models.SET(get_national_region))
 
     # When the club was founded (almost certainly before the club was added
     # to the system
