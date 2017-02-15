@@ -25,7 +25,7 @@ class QualificationViewSet(viewsets.ModelViewSet):
     # while receiving nested data, so we'll use two different serializers.
     def get_serializer(self, *args, **kwargs):
         kwargs['context'] = self.get_serializer_context()
-        if self.action in SAFE_METHODS:
+        if self.request.method in SAFE_METHODS:
             return QualificationSerializer(*args, **kwargs)
         return QualificationWriteSerializer(*args, **kwargs)
 
