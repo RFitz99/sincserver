@@ -121,6 +121,14 @@ class ClubViewSet(viewsets.ModelViewSet):
         serializer = self.serializer_class(queryset, many=True)
         return Response(serializer.data)
 
+    def perform_create(self, serializer):
+        # Find the region in the request data and save it with the rest
+        # of the data
+        region = get_object_or_404(Region, pk=self.request.data.get('region', None))
+        serializer.save(
+            region=region
+        )
+
     # We override ModelViewSet.retrieve() in order to set the fields.
     def retrieve(self, request, pk=None):
         # Retrieve the club
