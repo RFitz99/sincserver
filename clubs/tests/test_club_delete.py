@@ -33,3 +33,12 @@ class ClubDeleteTestCase(APITestCase):
         response = self.client.delete(reverse('club-detail', args=[self.ucc.id]))
         self.assertFalse(Club.objects.filter(name='UCC').exists())
         self.assertTrue(User.objects.filter(first_name='Club').exists())
+
+    def test_deleting_club_creates_national_club(self):
+        self.ucc.delete()
+        self.assertTrue(Club.objects.filter(name='National').exists())
+
+    def test_deleting_club_assigns_members_to_national_club(self):
+        self.ucc.delete()
+        member = User.objects.get(pk=self.member.pk)
+        self.assertEqual(member.club, Club.objects.get(name='National'))

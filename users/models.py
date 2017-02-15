@@ -19,6 +19,12 @@ end_of_last_year = date(this_year, DECEMBER, 31)
 end_of_next_year = date(this_year, DECEMBER, 31)
 end_of_this_year = date(this_year, DECEMBER, 31)
 
+def get_national_club():
+    return Club.objects.get_or_create(
+        name='National',
+        region=Region.objects.get_or_create(name='National')[0]
+    )[0]
+
 # Because we're using a custom User model (rather than Django's built-in
 # model), we also need to define a user manager with custom create_user()
 # and create_superuser() methods. This is largely because we're using the
@@ -114,7 +120,7 @@ class User(AbstractUser):
     # Each user belongs to exactly one club (including the default National
     # club).
     club = models.ForeignKey(Club, blank=True, null=True, related_name='users',
-                             on_delete=models.SET_NULL)
+                             on_delete=models.SET(get_national_club))
 
     # By default, a person has been a member of IUC since their User
     # object was created, but that won't be the case for anybody whose
