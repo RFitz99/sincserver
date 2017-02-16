@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer 
+from rest_framework.serializers import ModelSerializer, CharField
 
 from clubs.models import Club, CommitteePosition, Region
 from serializers import DynamicFieldsModelSerializer
@@ -39,6 +39,7 @@ class ClubSerializer(DynamicFieldsModelSerializer):
             model = User
             fields = ('id', 'first_name', 'last_name', 'email',)
 
+    name = CharField(read_only=True)
     users = ClubMemberSerializer(many=True, read_only=True)
     region = RegionSerializer(read_only=True)
 
