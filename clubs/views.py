@@ -79,7 +79,7 @@ class ClubViewSet(viewsets.ModelViewSet):
     }
 
     def get_allowed_fields(self, user, club):
-        if self.action in SAFE_METHODS:
+        if self.request.method in SAFE_METHODS:
             # By default, the allowed fields
             # the club's ID, name, and its region ID
             fields = self.base_fields
@@ -90,15 +90,12 @@ class ClubViewSet(viewsets.ModelViewSet):
             if user.is_dive_officer() and user.club == club:
                 fields = self.do_fields
             return fields
-        # For *unsafe* methods, we are a little stricter: DOs may
-        # not change their club's name or region. Only admins
-        # can do that.
+        # For unsafe methods, return the fields corresponding to the user's
+        # role
         if user.is_staff:
             return self.admin_fields
         if club.has_as_dive_officer(user):
-            # Remove name and region from allowed fields
-            return tuple(set(self.do_fields) - set(['name', 'region']))
-
+            return self.do_fields
         # We shouldn't be here. A non-admin, non-DO user has no rights
         # to change any aspect of their club (and they should have been
         # caught during the permissions check), so just raise PermissionDenied
@@ -124,8 +121,10 @@ class ClubViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Find the region in the request data and save it with the rest
         # of the data
+        name = self.request.data['name']
         region = get_object_or_404(Region, pk=self.request.data.get('region', None))
         serializer.save(
+            name=name,
             region=region
         )
 
@@ -170,13 +169,18 @@ class ClubViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         user = self.request.user
         data = self.request.data
+        region = self.get_object().region
         # Admins can update a club's region
         if user.is_staff and 'region' in data:
             region = get_object_or_404(Region, pk=data['region'])
-            serializer.save(region=region)
-            return
-        serializer.save()
-
+        # Admins can update a club's name
+        name = self.get_object().name
+        if user.is_staff and 'name' in data:
+            name = data['name']
+        serializer.save(
+            name=name,
+            region=region
+        )
 
     # The user can update different parts of the Club object based on
     # who they are: admins can change everything; DOs aren't permitted to
