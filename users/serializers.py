@@ -19,6 +19,7 @@ class UserSerializer(DynamicFieldsModelSerializer):
             'email', 'phone_home', 'phone_mobile',
             'club',
             'current_membership_status',
+            'is_instructor',
             'is_staff',
             'member_since',
             'next_fitness_test_due_date',
@@ -31,6 +32,8 @@ class UserSerializer(DynamicFieldsModelSerializer):
     # We handle club assignment in the view, so the serializer can treat
     # it as read-only
     club = ClubSerializer(read_only=True)
+
+    is_instructor = serializers.ReadOnlyField()
 
     # Let the frontend know if the user is a staff member so that they
     # can view the admin options
