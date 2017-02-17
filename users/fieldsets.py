@@ -17,6 +17,7 @@ MEMBERSHIP_STATUS = (
 )
 OWN_PROFILE = (
     'id', 'first_name', 'last_name', 'gender',
+    'is_instructor',
     'is_staff',
     'date_of_birth',
     'club',
