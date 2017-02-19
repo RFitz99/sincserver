@@ -30,7 +30,11 @@ def find_organizer_or_fall_back(user, data, current_organizer=None):
     # If the user is an admin or a DO, then let them try to reassign
     # the organizer if they want
     if (user.is_staff or user.is_dive_officer()) and 'organizer' in data:
-        # Try and find the user by ID; if it's invalid, return the
+        # If the proposed_organizer is explicitly 'None', then make the requesting user
+        # the organizer.
+        if data['organizer'] is None:
+            return user
+        # Otherwise, try and find the user by ID; if it's invalid, return the
         # fallback
         try:
             proposed_organizer = User.objects.get(pk=data['organizer'])

@@ -104,3 +104,15 @@ class CourseUpdateTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         # Change should not have been made
         self.assertEqual(Course.objects.get(pk=self.course.pk).region, old_region)
+
+    def test_nulling_organizer_makes_requesting_user_organizer(self):
+        course_id = self.course.id
+        self.client.force_authenticate(self.staff)
+        data = {
+            'organizer': None
+        }
+        print(data)
+        response = self.client.patch(reverse('course-detail', args=[self.course.id]), data, format='json')
+        updated_course = Course.objects.get(id=course_id)
+        #updated_course = Course.objects.get(self.course.id)
+        self.assertEqual(updated_course.organizer, self.staff)
