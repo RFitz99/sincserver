@@ -111,8 +111,6 @@ class CourseUpdateTestCase(APITestCase):
         data = {
             'organizer': None
         }
-        print(data)
         response = self.client.patch(reverse('course-detail', args=[self.course.id]), data, format='json')
         updated_course = Course.objects.get(id=course_id)
-        #updated_course = Course.objects.get(self.course.id)
         self.assertEqual(updated_course.organizer, self.staff)
