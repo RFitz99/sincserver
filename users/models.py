@@ -19,6 +19,12 @@ end_of_last_year = date(this_year, DECEMBER, 31)
 end_of_next_year = date(this_year, DECEMBER, 31)
 end_of_this_year = date(this_year, DECEMBER, 31)
 
+def get_national_club():
+    return Club.objects.get_or_create(
+        name='National',
+        region=Region.objects.get_or_create(name='National')[0]
+    )[0]
+
 # Because we're using a custom User model (rather than Django's built-in
 # model), we also need to define a user manager with custom create_user()
 # and create_superuser() methods. This is largely because we're using the
@@ -114,7 +120,7 @@ class User(AbstractUser):
     # Each user belongs to exactly one club (including the default National
     # club).
     club = models.ForeignKey(Club, blank=True, null=True, related_name='users',
-                             on_delete=models.SET_NULL)
+                             on_delete=models.SET(get_national_club))
 
     # By default, a person has been a member of IUC since their User
     # object was created, but that won't be the case for anybody whose
@@ -315,6 +321,16 @@ class User(AbstractUser):
     # you would want to do this...)
     def lose_certificate(self, certificate):
         Qualification.objects.filter(user=self, certificate=certificate).delete()
+
+
+    ############################################################################
+    # Authority checking --- is this user under the authority of another?
+    ############################################################################
+
+    def has_as_dive_officer(self, other_user):
+        # True if both users are in the same club and the other user is
+        # the Dive Officer, otherwise False
+        return self.club == other_user.club and other_user.is_dive_officer()
 
 
     ############################################################################

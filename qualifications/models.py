@@ -1,3 +1,4 @@
+import datetime
 from django.utils import timezone
 
 from django.db import models
@@ -30,11 +31,12 @@ class Qualification(models.Model):
     user = models.ForeignKey('users.User', related_name='qualifications', on_delete=models.CASCADE)
 
     # When was it granted? By default, when the model is created
-    date_granted = models.DateTimeField(blank=True, default=timezone.now)
+    date_granted = models.DateField(blank=True, default=datetime.date.today)
 
     # Internal use
     date_created = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return '{}: {} ({})'.format(self.user, self.certificate, self.date_granted.strftime('%d/%m/%Y'))
+        d = self.date_granted.strftime('%d/%m/%Y') if self.date_granted else 'undated'
+        return '{}: {} ({})'.format(self.user, self.certificate, d)

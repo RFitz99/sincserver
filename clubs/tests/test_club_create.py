@@ -36,6 +36,13 @@ class ClubCreateTestCase(APITestCase):
         response = self.client.post(reverse('club-list'), self.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_fields_are_populated(self):
+        self.client.force_authenticate(self.staff)
+        response = self.client.post(reverse('club-list'), self.data)
+        new_club = Club.objects.get(name=self.data['name'])
+        self.assertEqual(new_club.name, self.data['name'])
+        self.assertEqual(new_club.region.id, self.data['region'])
+
     ###########################################################################
     # Nobody else can create clubs:
     ###########################################################################

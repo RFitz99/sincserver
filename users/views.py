@@ -1,8 +1,9 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from rest_condition import C
 from rest_framework import viewsets
 from rest_framework.decorators import detail_route, list_route, permission_classes
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -14,7 +15,7 @@ from courses.serializers import CourseSerializer
 from permissions.permissions import IsAdminUser, IsDiveOfficer, IsSameUser
 from users import fieldsets
 from users.models import User
-from users.serializers import UserSerializer
+from users.serializers import UserSerializer, UserListSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
 
@@ -39,9 +40,13 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes_by_action = {
         # Admins and Dive Officers can create users
         'create': [C(IsAdminUser) | C(IsDiveOfficer)],
+        # Admins can view anyone's membership status; DOs can view their
+        # members'; users can view their own
+        'current_membership_status': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
         # Admins can update anyone; DOs can update members of their club;
         # users can update themselves
         'update': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
+        'partial_update': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
         # Only admins can delete users
         'delete': [IsAdminUser],
         # Admins and DOs can list users (but the queryset needs to be
@@ -52,6 +57,10 @@ class UserViewSet(viewsets.ModelViewSet):
         'retrieve': [C(IsAdminUser) | C(IsDiveOfficer)],
         # Authenticated users can view their own profile
         'me': [IsAuthenticated],
+        # Admins can view all courses organized; DOs can view within
+        # their club; users can view themselves
+        'courses_organized': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
+        'courses_taught': [(C(IsAdminUser) | C(IsDiveOfficer)) | C(IsSameUser)],
     }
 
     # When deciding what list of permissions to check, try first to
@@ -59,7 +68,7 @@ class UserViewSet(viewsets.ModelViewSet):
     # to using the default permission classes.
     #
     # Because all user-related options require the user to be authenticated,
-    # we prepend IsAuthenticated to the list
+    # we prepend IsAuthenticated to the list.
     def get_permissions(self):
         try:
             return [IsAuthenticated()] + [permission() for permission in self.permission_classes_by_action[self.action]]
@@ -93,6 +102,10 @@ class UserViewSet(viewsets.ModelViewSet):
     # position, they are allowed (at most) to view a list of members
     # of their own club; otherwise they are allowed to view a list
     # containing exactly one User: themselves.
+    #
+    # The benefit of this approach is that it protects us from having
+    # to ensure that unpermitted access returns 403s. Any requests for
+    # resources outside this queryset will just receive a 404.
     def get_queryset(self):
         # Find the user making the request
         user = self.request.user
@@ -130,13 +143,33 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             queryset = User.objects.filter(club=user.club)
 
+        if region_pk is not None:
+            queryset = queryset.filter(club__region__id=region_pk)
+
         # If we are looking for the users within a specific club
         # (e.g., an admin has made the request), then filter further.
         if club_pk is not None:
             queryset = queryset.filter(club__id=club_pk)
 
+
+        # Look at the request params. If they contain something useful,
+        # then add it to the filter.
+        params = request.query_params
+        # The user can search for users by a substring that will be
+        # compared case-insensitively to both the last and first
+        # names in the database. We'll also do a preliminary check
+        # to see whether it's numeric, in which case it could be a
+        # CFT number.
+        if 'name' in params:
+            fragment = params['name']
+            if fragment.isdigit():
+                q = Q(username__icontains=fragment)
+            else:
+                q = Q(first_name__icontains=fragment) | Q(last_name__icontains=fragment)
+            queryset = queryset.filter(q)
+
         # Serialize the queryset to JSON.
-        serializer = self.serializer_class(queryset, many=True)
+        serializer = UserListSerializer(queryset, many=True)
 
         # Return a Response.
         return Response(serializer.data)
@@ -146,30 +179,29 @@ class UserViewSet(viewsets.ModelViewSet):
     # Extra routes
     ###########################################################################
 
+    def _courses(self, role):
+        user = self.get_object()
+        kwargs = {role: user}
+        courses = Course.objects.filter(**kwargs)
+        serializer = CourseSerializer(courses, many=True)
+        return Response(serializer.data)
+
     # Tell us which courses this user has organized.
     @detail_route(methods=['get'], url_path='courses-organized')
     def courses_organized(self, request, pk=None):
         """
         Return the list of courses that this user has organized.
         """
-        user = self.get_object()
-        courses = Course.objects.filter(organizer=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
+        return self._courses('organizer')
 
-
-    # Tell us which courses this user has organized.
+    # Tell us which courses this user is teaching (or has taught).
     @detail_route(methods=['get'], url_path='courses-taught')
     def courses_taught(self, request, pk=None):
         """
         Return the list of courses on which this user is teaching
         or has taught
         """
-        user = self.get_object()
-        courses = Course.objects.filter(instructors=user)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
-
+        return self._courses('instructors')
 
     # Return this user's current membership status.
     @detail_route(methods=['get'])

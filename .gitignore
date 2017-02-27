@@ -95,3 +95,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Keep fixture-generation code out of source control
+fixtures.py

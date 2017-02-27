@@ -35,10 +35,10 @@ class Course(models.Model):
     region = models.ForeignKey('clubs.Region', blank=True, null=True)
 
     # Who's teaching this?
-    instructors = models.ManyToManyField(User, through='CourseInstruction', related_name='courses_instructed')
+    instructors = models.ManyToManyField(User, through='courses.CourseInstruction', related_name='courses_instructed')
 
     # Who's attending
-    students = models.ManyToManyField(User, through='CourseAttendance', related_name='courses_taught')
+    students = models.ManyToManyField(User, through='courses.CourseEnrolment', related_name='courses_enrolled')
 
     ############################################################################
     # Internal use
@@ -48,11 +48,11 @@ class Course(models.Model):
 
 
 
-class CourseAttendance(models.Model):
+class CourseEnrolment(models.Model):
 
     # Foreign keys to the member and course
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='courseenrolments')
 
     # Has the member's Dive Officer checked this?
     recommended_by_dive_officer = models.BooleanField(blank=True, default=False)
@@ -62,6 +62,13 @@ class CourseAttendance(models.Model):
     ############################################################################
     date_created = models.DateTimeField(auto_now_add=True)
     last_modified = models.DateTimeField(auto_now=True)
+
+    ############################################################################
+    # Can a DO edit this?
+    ############################################################################
+
+    def has_as_dive_officer(self, possible_dive_officer):
+        return self.user.has_as_dive_officer(possible_dive_officer)
 
 
 class CourseInstruction(models.Model):

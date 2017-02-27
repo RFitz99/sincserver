@@ -92,3 +92,67 @@ class UserListTestCase(APITestCase):
         self.client.force_authenticate(self.do)
         response = self.client.get(reverse('user-me'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class UserFilterListTestCase(APITestCase):
+
+    def setUp(self):
+        fake = Faker()
+        # Create an admin
+        self.admin = User.objects.create_user('Staff', 'Member', is_staff=True)
+        # Create a club with a DO and a member
+        self.uccsac = Club.objects.create(name='UCCSAC')
+        self.do = User.objects.create_user('Dave', 'Officer', club=self.uccsac)
+        self.do.become_dive_officer()
+        self.member = User.objects.create_user('Club', 'Member', club=self.uccsac)
+
+    def test_admin_can_filter_by_name_fragment(self):
+        self.client.force_authenticate(self.admin)
+        data = {'name': 'ffic'}
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), data['name']))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_admin_can_filter_by_id(self):
+        uid = User.objects.get(first_name='Club', last_name='Member').id
+        self.client.force_authenticate(self.admin)
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), uid))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_filtering_looks_at_both_first_and_last_names(self):
+        User.objects.create_user('Officer', 'Friendly', club=self.uccsac)
+        self.client.force_authenticate(self.admin)
+        data = {'name': 'ffic'}
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), data['name']))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_filtering_is_case_insensitive(self):
+        User.objects.create_user('Ffion', 'Jones', club=self.uccsac)
+        self.client.force_authenticate(self.admin)
+        data = {'name': 'ffi'}
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), data['name']))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
+    def test_empty_querystring_returns_full_list(self):
+        self.client.force_authenticate(self.admin)
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), ''))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 3)
+
+    def test_dive_officer_can_search_only_within_club(self):
+        self.client.force_authenticate(self.do)
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), 'member'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+
+    def test_unauthenticated_users_cannot_search(self):
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), 'member'))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_users_cannot_search(self):
+        self.client.force_authenticate(self.member)
+        response = self.client.get('{}?name={}'.format(reverse('user-list'), 'member'))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
